@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import call, patch, MagicMock
 
-from backup.api import FilmwebError, fetch, fetch_user_details, fetch_user_ratings
+from backup.api import FilmwebError, fetch, fetch_movie_details, fetch_user_details, fetch_user_ratings
 
 class TestApi(unittest.TestCase):
   @patch("backup.api.requests")
@@ -141,6 +141,85 @@ class TestApi(unittest.TestCase):
       call('/logged/vote/title/film?page=1', 'jwt'),
       call('/logged/vote/title/film?page=2', 'jwt')
     ])
+
+  @patch("backup.api.fetch")
+  def test_fetch_movie_details_title(self, mock_fetch):
+    # given
+    mock_details = {
+      "year": 2006,
+      "title": {
+          "title": "Renaissance",
+          "country": "PL",
+          "lang": "pl"
+      },
+      "originalTitle": {
+          "title": "Renaissance",
+          "country": "FR",
+          "lang": "fr",
+          "original": True
+      },
+      "genres": [
+          {
+              "id": 24,
+              "name": {
+                  "text": "Thriller"
+              },
+              "nameKey": "24"
+          },
+          {
+              "id": 77,
+              "name": {
+                  "text": "Animacja dla dorosłych"
+              },
+              "nameKey": "77"
+          }
+      ],
+    }
+    mock_fetch.return_value = mock_details
+
+    # when
+    result = fetch_movie_details(743825, 'jwt')
+    # then
+    self.assertEqual(result, { 'movie_id': 743825, 'title': 'Renaissance', 'year': 2006, 'genres': 'Thriller, Animacja dla dorosłych' })
+    # and
+    mock_fetch.assert_called_once_with('/film/743825/preview', 'jwt')
+
+  @patch("backup.api.fetch")
+  def test_fetch_movie_details_original_title(self, mock_fetch):
+    # given
+    mock_details = {
+      "year": 2006,
+      "originalTitle": {
+          "title": "Renaissance",
+          "country": "FR",
+          "lang": "fr",
+          "original": True
+      },
+      "genres": [
+          {
+              "id": 24,
+              "name": {
+                  "text": "Thriller"
+              },
+              "nameKey": "24"
+          },
+          {
+              "id": 77,
+              "name": {
+                  "text": "Animacja dla dorosłych"
+              },
+              "nameKey": "77"
+          }
+      ],
+    }
+    mock_fetch.return_value = mock_details
+
+    # when
+    result = fetch_movie_details(743825, 'jwt')
+    # then
+    self.assertEqual(result, { 'movie_id': 743825, 'title': 'Renaissance', 'year': 2006, 'genres': 'Thriller, Animacja dla dorosłych' })
+    # and
+    mock_fetch.assert_called_once_with('/film/743825/preview', 'jwt')
 
 if __name__ == "__main__":
     unittest.main()
