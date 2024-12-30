@@ -9,7 +9,7 @@ class Genre:
 
 @dataclass(eq=True, repr=True)
 class Movie:
-  movie_id: int
+  id: int
   title: str
   year: int
   genres: list[Genre]
