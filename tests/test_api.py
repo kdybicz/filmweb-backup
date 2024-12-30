@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import call, patch, MagicMock
 
-from backup.api import FilmwebError, fetch, fetch_movie_details, fetch_user_details, fetch_user_ratings
+from backup.api import FilmwebError, Genre, Movie, Rating, UserDetails, fetch, fetch_movie_details, fetch_user_details, fetch_user_ratings
 
 class TestApi(unittest.TestCase):
   @patch("backup.api.requests")
@@ -71,7 +71,7 @@ class TestApi(unittest.TestCase):
     # when
     result = fetch_user_details('jwt')
     # then
-    self.assertEqual(result, {'display_name': 'John Doe', 'id': 1234567, 'name': 'johndoe'})
+    self.assertEqual(result, UserDetails(1234567, 'johndoe', 'John Doe'))
     # and
     mock_fetch.assert_called_once_with('/logged/info', 'jwt')
 
@@ -92,7 +92,7 @@ class TestApi(unittest.TestCase):
     # when
     result = fetch_user_details('jwt')
     # then
-    self.assertEqual(result, {'display_name': 'johndoe', 'id': 1234567, 'name': 'johndoe'})
+    self.assertEqual(result, UserDetails(1234567, 'johndoe', None))
     # and
     mock_fetch.assert_called_once_with('/logged/info', 'jwt')
 
@@ -122,18 +122,18 @@ class TestApi(unittest.TestCase):
     result = fetch_user_ratings('jwt')
     # then
     self.assertEqual(result, [
-        {
-            "rate": 8,
-            "movie_id": 743825,
-            "favorite": True,
-            "view_date": 20231220
-        },
-        {
-            "rate": 8,
-            "movie_id": 875717,
-            "favorite": False,
-            "view_date": 20221218
-        }
+        Rating(
+            743825,
+            8,
+            True,
+            20231220
+        ),
+        Rating(
+            875717,
+            8,
+            False,
+            20221218
+        )
       ]
     )
     # and
@@ -180,7 +180,7 @@ class TestApi(unittest.TestCase):
     # when
     result = fetch_movie_details(743825, 'jwt')
     # then
-    self.assertEqual(result, { 'movie_id': 743825, 'title': 'Renaissance', 'year': 2006, 'genres': 'Thriller, Animacja dla dorosłych' })
+    self.assertEqual(result, Movie(743825, 'Renaissance', 2006, [Genre(24, 'Thriller'), Genre(77, 'Animacja dla dorosłych')]))
     # and
     mock_fetch.assert_called_once_with('/film/743825/preview', 'jwt')
 
@@ -217,7 +217,7 @@ class TestApi(unittest.TestCase):
     # when
     result = fetch_movie_details(743825, 'jwt')
     # then
-    self.assertEqual(result, { 'movie_id': 743825, 'title': 'Renaissance', 'year': 2006, 'genres': 'Thriller, Animacja dla dorosłych' })
+    self.assertEqual(result, Movie(743825, 'Renaissance', 2006, [Genre(24, 'Thriller'), Genre(77, 'Animacja dla dorosłych')]))
     # and
     mock_fetch.assert_called_once_with('/film/743825/preview', 'jwt')
 

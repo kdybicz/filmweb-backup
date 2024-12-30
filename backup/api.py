@@ -1,17 +1,45 @@
+from dataclasses import dataclass
 import json
 import requests
 
-def fetch_movie_details(movie_id: int, jwt: str):
-    movie_details = fetch(f"/film/{movie_id}/preview", jwt);
-    return {
-      "movie_id": movie_id,
-      "title": movie_details["title"]["title"] if "title" in movie_details else movie_details["originalTitle"]["title"],
-      "year": movie_details["year"],
-      "genres": ", ".join(genre["name"]["text"] for genre in movie_details["genres"]),
-    }
+@dataclass(eq=True, repr=True)
+class Genre:
+  id: int
+  name: str
 
-def fetch_user_ratings(jwt: str):
-  movies = []
+@dataclass(eq=True, repr=True)
+class Movie:
+  movie_id: int
+  title: str
+  year: int
+  genres: list[Genre]
+
+@dataclass(eq=True, repr=True)
+class Rating:
+  movie_id: int
+  rate: int
+  favorite: bool
+  view_date: int
+
+@dataclass(eq=True, repr=True)
+class UserDetails:
+  id: int
+  name: str
+  display_name: str | None
+
+
+def fetch_movie_details(movie_id: int, jwt: str) -> Movie:
+    movie_details = fetch(f"/film/{movie_id}/preview", jwt)
+
+    return Movie(
+      movie_id,
+      movie_details["title"]["title"] if "title" in movie_details else movie_details["originalTitle"]["title"],
+      movie_details["year"],
+      list(Genre(genre["id"], genre["name"]["text"]) for genre in movie_details["genres"])
+    )
+
+def fetch_user_ratings(jwt: str) -> list[Rating]:
+  movies: list[Rating] = []
   page = 1
   while (True):
     response = fetch(f"/logged/vote/title/film?page={page}", jwt)
@@ -21,13 +49,12 @@ def fetch_user_ratings(jwt: str):
     page = page + 1
 
     for score in response:
-      print(json.dumps(score))
-      movie = {
-        "movie_id": score["entity"],
-        "rate": score["rate"],
-        "favorite": score["favorite"] if "favorite" in score else False,
-        "view_date": score["viewDate"],
-      }
+      movie = Rating(
+        score["entity"],
+        score["rate"],
+        score["favorite"] if "favorite" in score else False,
+        score["viewDate"]
+      )
 
       movies.append(movie)
   
@@ -35,16 +62,16 @@ def fetch_user_ratings(jwt: str):
 
   return movies
 
-def fetch_user_details(jwt: str) -> json:
+def fetch_user_details(jwt: str) -> UserDetails:
   response = fetch("/logged/info", jwt)
 
-  user_details = {
-    "id": response["id"],
-    "name": response["name"],
-    "display_name": f"{response["personalData"]["firstname"]} {response["personalData"]["surname"]}" if "personalData" in response else response["name"],
-  }
+  user_details = UserDetails(
+    response["id"],
+    response["name"],
+    f"{response["personalData"]["firstname"]} {response["personalData"]["surname"]}" if "personalData" in response else None
+  )
 
-  print(f"User details: {json.dumps(user_details)}")
+  print(f"User details: {user_details}")
 
   return user_details
 
