@@ -191,3 +191,4 @@ pip-selfcheck.json
 # Custom
 #
 *.db
+*.csv
