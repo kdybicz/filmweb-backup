@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import call, patch, MagicMock
 
-from backup.api import FilmwebError, Genre, Movie, Rating, UserDetails, fetch, fetch_movie_details, fetch_user_details, fetch_user_ratings
+from backup.api import FilmwebError, Genre, Movie, MovieRating, UserRating, UserDetails, fetch, fetch_movie_details, fetch_user_details, fetch_user_ratings
 
 class TestApi(unittest.TestCase):
   @patch("backup.api.requests")
@@ -122,13 +122,13 @@ class TestApi(unittest.TestCase):
     result = fetch_user_ratings('jwt')
     # then
     self.assertEqual(result, [
-        Rating(
+        UserRating(
             743825,
             8,
             True,
             20231220
         ),
-        Rating(
+        UserRating(
             875717,
             8,
             False,
@@ -221,5 +221,46 @@ class TestApi(unittest.TestCase):
     # and
     mock_fetch.assert_called_once_with('/film/743825/preview', 'jwt')
 
-if __name__ == "__main__":
-    unittest.main()
+  @patch("backup.api.fetch")
+  def test_fetch_movie_rating(self, mock_fetch):
+    # given
+    mock_details = {
+      "count": 429,
+      "rate": 6.00699,
+      "countWantToSee": 1284,
+      "countVote1": 12,
+      "countVote2": 6,
+      "countVote3": 27,
+      "countVote4": 46,
+      "countVote5": 62,
+      "countVote6": 93,
+      "countVote7": 84,
+      "countVote8": 70,
+      "countVote9": 18,
+      "countVote10": 11
+    }
+    mock_fetch.return_value = mock_details
+
+    # when
+    result = fetch_movie_details(743825, 'jwt')
+    # then
+    self.assertEqual(result, MovieRating(
+      count = 429,
+      rate = 6.00699,
+      countWantToSee = 1284,
+      countVote1 = 12,
+      countVote2 = 6,
+      countVote3 = 27,
+      countVote4 = 46,
+      countVote5 = 62,
+      countVote6 = 93,
+      countVote7 = 84,
+      countVote8 = 70,
+      countVote9 = 18,
+      countVote10 = 11,
+    ))
+    # and
+    mock_fetch.assert_called_once_with('/film/743825/preview', 'jwt')
+
+# if __name__ == "__main__":
+#     unittest.main()
