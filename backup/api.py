@@ -1,9 +1,14 @@
+import logging
 import requests
 
 from data import Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
+logger = logging.getLogger("filmweb.api")
+
 def fetch_movie_details(movie_id: int) -> Movie:
     movie_details = fetch(f"/film/{movie_id}/preview")
+
+    logger.debug(f"Got movie details for movie id {movie_id}")
 
     return Movie(
       id = movie_id,
@@ -19,6 +24,8 @@ def fetch_movie_details(movie_id: int) -> Movie:
 
 def fetch_movie_rating(movie_id: int) -> MovieRating:
     movie_rating = fetch(f"/film/{movie_id}/rating")
+
+    logger.debug(f"Got rating details for movie id {movie_id}")
 
     return MovieRating(
       movie_id = movie_id,
@@ -58,7 +65,7 @@ def fetch_user_ratings(jwt: str) -> list[UserRating]:
 
       movies.append(movie)
   
-  print(f"Found ${len(movies)} scored movies!")
+  logger.info(f"Found {len(movies)} scored movies!")
 
   return movies
 
@@ -72,7 +79,7 @@ def fetch_user_details(jwt: str) -> UserDetails:
     f"{response["personalData"]["firstname"]} {response["personalData"]["surname"]}" if "personalData" in response else None
   )
 
-  print(f"User details: {user_details}")
+  logger.debug(f"Got user details for user {user_details.name}")
 
   return user_details
 
@@ -90,7 +97,7 @@ def fetch(path: str, jwt: str | None = None):
 
     response = requests.get(url, headers=headers, cookies=cookies, timeout=5)
     if not response.ok:
-      print(f"{response.status_code}: {response.text}")
+      logger.error(f"{response.status_code}: {response.text}")
       raise FilmwebError(response.text)
     return response.json()
 

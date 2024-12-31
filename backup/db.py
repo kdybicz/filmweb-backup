@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass
+import logging
 import sqlite3
 
 from api import Genre, Movie, MovieRating, UserRating, UserDetails
@@ -14,6 +15,8 @@ class MovieRatingDetails:
 
 class FilmwebDB:
   def __init__(self):
+    self.logger = logging.getLogger('filmweb.db')
+
     self.con = sqlite3.connect("filmweb.db")
 
     cur = self.con.cursor()
@@ -27,6 +30,8 @@ class FilmwebDB:
       cur.execute("CREATE TABLE IF NOT EXISTS user (id INTEGER PRIMARY KEY, name TEXT NOT NULL, display_name TEXT);")
       cur.execute("CREATE TABLE IF NOT EXISTS rating (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, movie_id INTEGER NOT NULL, rate INTEGER NOT NULL, favorite INTEGER NOT NULL, view_date INTEGER NOT NULL, FOREIGN KEY (user_id) REFERENCES user (id), FOREIGN KEY (movie_id) REFERENCES movie (id));")
       self.con.commit()
+
+      self.logger.debug("Database initialized!")
     finally:
       cur.close()
 
@@ -62,6 +67,8 @@ class FilmwebDB:
       cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id);", movie_directors)
 
       self.con.commit()
+
+      self.logger.debug(f"Stored movie details for movie id {movie.id}")
     finally:
       cur.close()
 
@@ -72,6 +79,8 @@ class FilmwebDB:
       cur.execute("INSERT INTO movie_rating (movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (:movie_id, :count, :rate, :countWantToSee, :countVote1, :countVote2, :countVote3, :countVote4, :countVote5, :countVote6, :countVote7, :countVote8, :countVote9, :countVote10);", asdict(rating))
 
       self.con.commit()
+
+      self.logger.debug(f"Stored movie rating for movie id {rating.movie_id}")
     finally:
       cur.close()
 
@@ -84,7 +93,10 @@ class FilmwebDB:
     try:
       rows = list(asdict(genre) for genre in genres)
       cur.executemany("INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", rows)
+
       self.con.commit()
+
+      self.logger.debug(f"Stored {len(genres)} movie genres!")
     finally:
       cur.close()
   
@@ -94,7 +106,10 @@ class FilmwebDB:
     try:
       cur.execute("DELETE FROM user WHERE id=:id;", { "id": user_details.id })
       cur.execute("INSERT INTO user (id, name, display_name) VALUES (:id, :name, :display_name);", asdict(user_details))
+      
       self.con.commit()
+
+      self.logger.debug(f"Stored user details for user id {user_details.id}")
     finally:
       cur.close()
 
@@ -115,7 +130,10 @@ class FilmwebDB:
         "view_date": rating.view_date
       } for rating in ratings)
       cur.executemany("INSERT INTO rating (user_id, movie_id, rate, favorite, view_date) VALUES (:user_id, :movie_id, :rate, :favorite, :view_date);", rows)
+
       self.con.commit()
+
+      self.logger.debug(f"Stored user ratings for user id {user_id}")
     finally:
       cur.close()
 
