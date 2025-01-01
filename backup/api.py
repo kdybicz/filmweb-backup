@@ -1,8 +1,8 @@
 import logging
-import time
 import requests
+import time
 
-from data import Director, Genre, Movie, MovieRating, UserDetails, UserRating
+from .data import Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
 class FilmwebAPI:
   def __init__(self):
@@ -156,28 +156,20 @@ class FilmwebAPI:
 
       try:
         response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
-        if not response.ok:
-          self.logger.error(f"{response.status_code}: {response.text}")
-          raise FilmwebError(response.text)
+        response.raise_for_status()
+
         if response.status_code == 204:
             return None
 
         return response.json()
-      except requests.exceptions.ReadTimeout:
+      except requests.exceptions.Timeout:
         continue
-      except:
-        self.logger.error(f"{response.status_code} {response.text}")
-        raise FilmwebError("Failed to fetch data")
+      except requests.exceptions.RequestException:
+        raise FilmwebException(f"Failed to fetch data - {response.status_code}: {response.text.strip()}")
 
-    raise FilmwebError(f"Failed to fetch data after {retry} retries!")
+    raise FilmwebException(f"Failed to fetch data after {retry} retries!")
 
 
-class FilmwebError(Exception):
-    """Error raised when Filmweb requests fails"""
-
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
-
-    def __str__(self) -> str:
-        return repr(self.message)
+class FilmwebException(Exception):
+  """Error raised when Filmweb requests fails"""
+  pass

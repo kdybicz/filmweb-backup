@@ -1,10 +1,9 @@
 import csv
 import logging
-import sys
 
-from api import FilmwebAPI
-from data import UserDetails
-from db import FilmwebDB
+from .api import FilmwebAPI
+from .data import UserDetails
+from .db import FilmwebDB
 
 class FilmwebBackup:
   def __init__(self):
@@ -73,13 +72,3 @@ class FilmwebBackup:
       export_file.writerows(list([re.title, re.year, re.rate, re.favorite, re.view_date, re.genres] for re in ratings_export))
 
     self.logger.info(f"Exported information about {len(ratings_export)} movies for user {user_id}")
-
-
-if __name__ == '__main__':
-  jwt = ""
-
-  filmweb = FilmwebBackup()
-  user = filmweb.backup(jwt)
-  filmweb.export(user.id)
-
-  sys.exit(0)

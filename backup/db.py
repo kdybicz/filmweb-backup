@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 import logging
 import sqlite3
 
-from api import Genre, Movie, MovieRating, UserRating, UserDetails
+from .data import Genre, Movie, MovieRating, UserRating, UserDetails
 
 @dataclass
 class MovieRatingDetails:
