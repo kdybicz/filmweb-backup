@@ -99,14 +99,14 @@ class FilmwebDB:
       self.logger.debug(f"Stored {len(genres)} movie genres!")
     finally:
       cur.close()
-  
+
 
   def set_user_details(self, user_details: UserDetails):
     cur = self.con.cursor()
     try:
       cur.execute("DELETE FROM user WHERE id=:id;", { "id": user_details.id })
       cur.execute("INSERT INTO user (id, name, display_name) VALUES (:id, :name, :display_name);", asdict(user_details))
-      
+
       self.con.commit()
 
       self.logger.debug(f"Stored user details for user id {user_details.id}")

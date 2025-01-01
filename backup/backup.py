@@ -2,56 +2,84 @@ import csv
 import logging
 import sys
 
-from api import fetch_movie_details, fetch_movie_rating, fetch_user_details, fetch_user_ratings
+from api import FilmwebAPI
+from data import UserDetails
 from db import FilmwebDB
 
+class FilmwebBackup:
+  def __init__(self):
+    self.logger = self.setup_logging()
 
-def setup_logging(level=logging.DEBUG) -> logging.Logger:
-  logger = logging.getLogger('filmweb')
-  logger.setLevel(level)
+    self.db = FilmwebDB()
+    self.api = FilmwebAPI()
 
-  # Create a console handler
-  ch = logging.StreamHandler()
-  ch.setLevel(level)
-  
-  logger.addHandler(ch)
 
-  return logger
+  def setup_logging(self, level=logging.DEBUG) -> logging.Logger:
+    logger = logging.getLogger('filmweb')
+    logger.setLevel(level)
 
-def main() -> int:
-  jwt = ""
+    # Create a console handler
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
 
-  logger = setup_logging()
+    logger.addHandler(ch)
 
-  db = FilmwebDB()
-  
-  user_details = fetch_user_details(jwt)
-  db.set_user_details(user_details)
+    return logger
 
-  ratings = fetch_user_ratings(jwt)
-  db.upsert_ratings(user_details.id, ratings)
 
-  for rating in ratings:
-    movie_id = rating.movie_id
-    if db.has_movie(movie_id) is False:
-      movie_details = fetch_movie_details(movie_id)
-      db.insert_movie(movie_details)
+  def backup_movie(self, movie_id: int) -> None:
+    if self.db.has_movie(movie_id) is False:
+      movie_details = self.api.fetch_movie_details(movie_id)
+      self.db.insert_movie(movie_details)
 
-      movie_rating = fetch_movie_rating(movie_id)
-      db.upsert_movie_rating(movie_rating)
+      movie_rating = self.api.fetch_movie_rating(movie_id)
+      self.db.upsert_movie_rating(movie_rating)
 
-  ratings_export = db.get_user_rating(user_details.id)
 
-  with open('filmweb.csv', 'w', newline='') as csv_file:
-    export_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    export_file.writerow(['title', 'year', 'rate', 'favorite', 'view_date', 'genres'])
-    export_file.writerows(list([re.title, re.year, re.rate, re.favorite, re.view_date, re.genres] for re in ratings_export))
-    # https://www.filmweb.pl/film/Klaus-2019-743825
-    # https://www.filmweb.pl/api/v1/film/743825/rating
+  def backup_user(self, user: UserDetails, jwt: str) -> None:
+    self.db.set_user_details(user)
 
-  logger.info(f"Exported informations about {len(ratings_export)} movies for user {user_details.name}")
+    ratings = self.api.fetch_user_ratings(jwt)[:10]
+    self.db.upsert_ratings(user.id, ratings)
 
-  return 0
+    for rating in ratings:
+      self.backup_movie(rating.movie_id)
+
+    friends = self.api.fetch_user_friends(jwt)
+    for friend in friends:
+      self.db.set_user_details(friend)
+
+      friend_ratings = self.api.fetch_friend_ratings(friend.name, jwt)[:10]
+      self.db.upsert_ratings(friend.id, friend_ratings)
+
+      for rating in friend_ratings:
+        self.backup_movie(rating.movie_id)
+
+
+  def backup(self, jwt: str) -> UserDetails:
+    user_details = self.api.fetch_user_details(jwt)
+
+    self.backup_user(user_details, jwt)
+
+    return user_details
+
+
+  def export(self, user_id: int):
+    ratings_export = self.db.get_user_rating(user_id)
+
+    with open('filmweb.csv', 'w', newline='') as csv_file:
+      export_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+      export_file.writerow(['title', 'year', 'rate', 'favorite', 'view_date', 'genres'])
+      export_file.writerows(list([re.title, re.year, re.rate, re.favorite, re.view_date, re.genres] for re in ratings_export))
+
+    self.logger.info(f"Exported information about {len(ratings_export)} movies for user {user_id}")
+
 
 if __name__ == '__main__':
-  sys.exit(main())
+  jwt = ""
+
+  filmweb = FilmwebBackup()
+  user = filmweb.backup(jwt)
+  filmweb.export(user.id)
+
+  sys.exit(0)
