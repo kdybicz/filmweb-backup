@@ -28,7 +28,7 @@ class Movie:
   internationalTitle: str | None
   year: int
   genres: list[Genre]
-  duration: int
+  duration: int | None
   directors: list[Director]
   cast: list[Cast]
   countries: list[Country]

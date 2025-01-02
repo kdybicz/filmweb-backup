@@ -27,8 +27,11 @@ class FilmwebDB:
         CREATE TABLE IF NOT EXISTS movie(
           id INTEGER PRIMARY KEY,
           last_updated TEXT,
-          title TEXT NOT NULL,
-          year INTEGER NOT NULL
+          orig_title TEXT NOT NULL,
+          int_title TEXT,
+          title TEXT,
+          year INTEGER NOT NULL,
+          duration INTEGER
         );
         CREATE TABLE IF NOT EXISTS movie_rating(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,9 +157,12 @@ class FilmwebDB:
   def upsert_movie(self, movie: Movie):
     cur = self.con.cursor()
     try:
-      cur.execute("REPLACE INTO movie (id, title, year) VALUES (:id, :title, :year);", {
+      cur.execute("REPLACE INTO movie (id, orig_title, int_title, title, duration, year) VALUES (:id, :orig_title, :int_title, :title, :duration, :year);", {
         "id": movie.id,
-        "title": movie.title if movie.title is not None else movie.internationalTitle if movie.internationalTitle is not None else movie.originalTitle,
+        "orig_title": movie.originalTitle,
+        "int_title": movie.internationalTitle,
+        "title": movie.title,
+        "duration": movie.duration,
         "year": movie.year,
       })
 
