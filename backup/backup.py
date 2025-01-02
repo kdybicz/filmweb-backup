@@ -63,7 +63,7 @@ class FilmwebBackup:
     ratings_export = self.db.get_user_rating(user_details.id)
 
     safe_user_name = self.__get_valid_filename__(user_details.name)
-    with open(f"filmweb-{safe_user_name}.csv", "w", newline="") as csv_file:
+    with open(f"export/filmweb-{safe_user_name}.csv", "w", newline="") as csv_file:
       export_file = csv.writer(csv_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
       export_file.writerow(["original_title", "international_title", "title", "year", "rate", "my_rate", "favorite", "view_date", "duration", "genres", "directors", "cast", "countries"])
       export_file.writerows(list([re.original_title, re.international_title, re.title, re.year, re.rate, re.my_rate, re.favorite, re.view_date, re.duration, re.genres, re.directors, re.cast, re.countries] for re in ratings_export))
