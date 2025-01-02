@@ -25,7 +25,7 @@ class FilmwebBackup:
   def backup_user(self, user: UserDetails, jwt: str) -> None:
     self.db.set_user_details(user)
 
-    ratings = self.api.fetch_user_ratings(jwt)[:10]
+    ratings = self.api.fetch_user_ratings(jwt)
     self.db.upsert_ratings(user.id, ratings)
 
     for rating in ratings:
@@ -35,7 +35,7 @@ class FilmwebBackup:
     for friend in friends:
       self.db.set_user_details(friend)
 
-      friend_ratings = self.api.fetch_friend_ratings(friend.name, jwt)[:10]
+      friend_ratings = self.api.fetch_friend_ratings(friend.name, jwt)
       self.db.upsert_ratings(friend.id, friend_ratings)
 
       for rating in friend_ratings:
