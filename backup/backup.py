@@ -7,23 +7,10 @@ from .db import FilmwebDB
 
 class FilmwebBackup:
   def __init__(self):
-    self.logger = self.setup_logging()
+    self.logger = logging.getLogger('filmweb.backup')
 
     self.db = FilmwebDB()
     self.api = FilmwebAPI()
-
-
-  def setup_logging(self, level=logging.DEBUG) -> logging.Logger:
-    logger = logging.getLogger('filmweb')
-    logger.setLevel(level)
-
-    # Create a console handler
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-
-    logger.addHandler(ch)
-
-    return logger
 
 
   def backup_movie(self, movie_id: int) -> None:
