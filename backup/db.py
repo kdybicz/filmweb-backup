@@ -6,12 +6,19 @@ from .data import Genre, Movie, MovieRating, UserRating, UserDetails
 
 @dataclass
 class MovieRatingDetails:
-  title: str
+  original_title: str
+  international_title: str | None
+  title: str | None
   year: int
-  rate: int
+  rate: float
+  my_rate: int
   favorite: bool
   view_date: int
+  duration: int | None
   genres: str
+  directors: str
+  cast: str
+  countries: str
 
 class FilmwebDB:
   def __init__(self, name: str = "filmweb.db"):
@@ -278,24 +285,60 @@ class FilmwebDB:
     cur = self.con.cursor()
     try:
       cur.execute("""
-        SELECT m.title, m.year, r.rate, r.favorite, r.view_date, GROUP_CONCAT(g.name, ", ") genres
-        FROM rating r
-        JOIN movie m ON r.movie_id = m.id
-        JOIN movie_genres mg ON mg.movie_id = m.id
-        JOIN genre g ON mg.genre_id = g.id
+        SELECT m.orig_title,
+          m.int_title,
+          m.title,
+          m.year,
+          round(mr.rate, 1) rate,
+          r.rate my_rate,
+          r.favorite,
+          r.view_date,
+          m.duration,
+          GROUP_CONCAT(distinct g.name) genres,
+          GROUP_CONCAT(distinct d.name) directors,
+          GROUP_CONCAT(distinct c.name) cast,
+          GROUP_CONCAT(distinct ct.code) countries
+        FROM `movie` m
+          JOIN `rating` r ON r.movie_id = m.id
+          JOIN `movie_genres` mg ON mg.movie_id = m.id
+          JOIN `genre` g ON mg.genre_id = g.id
+          JOIN `movie_rating` mr ON mr.movie_id = m.id
+          JOIN `movie_directors` md ON md.movie_id = m.id
+          JOIN `director` d ON md.director_id = d.id
+          JOIN `movie_cast` mc ON mc.movie_id = m.id
+          JOIN `cast` c ON mc.cast_id = c.id
+          JOIN `movie_countries` mct ON mct.movie_id = m.id
+          JOIN `country` ct ON mct.country_id = ct.id
         WHERE r.user_id = :id
         GROUP BY m.id;
       """, ({ "id": user_id }))
       return list(MovieRatingDetails(
-        rating[0],
-        rating[1],
-        rating[2],
-        True if rating[3] == 1 else False,
-        rating[4],
-        rating[5],
+        original_title=rating[0],
+        international_title=rating[1],
+        title=rating[2],
+        year=rating[3],
+        rate=rating[4],
+        my_rate=rating[5],
+        favorite=True if rating[6] == 1 else False,
+        view_date=rating[7],
+        duration=rating[8],
+        genres=rating[9],
+        directors=rating[10],
+        cast=rating[11],
+        countries=rating[12],
       ) for rating in cur.fetchall())
     finally:
       cur.close()
 
 
-
+  def get_all_users(self) -> list[UserDetails]:
+    cur = self.con.cursor()
+    try:
+      cur.execute("SELECT id, name, display_name FROM user;")
+      return list(UserDetails(
+        user[0],
+        user[1],
+        user[2],
+      ) for user in cur.fetchall())
+    finally:
+      cur.close()

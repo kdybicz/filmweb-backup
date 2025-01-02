@@ -1,5 +1,6 @@
 import csv
 import logging
+import re
 
 from .api import FilmwebAPI
 from .data import UserDetails
@@ -58,12 +59,28 @@ class FilmwebBackup:
     return user_details
 
 
-  def export(self, user_id: int):
-    ratings_export = self.db.get_user_rating(user_id)
+  def export(self, user_details: UserDetails) -> None:
+    ratings_export = self.db.get_user_rating(user_details.id)
 
-    with open("filmweb.csv", "w", newline="") as csv_file:
+    safe_user_name = self.__get_valid_filename__(user_details.name)
+    with open(f"filmweb-{safe_user_name}.csv", "w", newline="") as csv_file:
       export_file = csv.writer(csv_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-      export_file.writerow(["title", "year", "rate", "favorite", "view_date", "genres"])
-      export_file.writerows(list([re.title, re.year, re.rate, re.favorite, re.view_date, re.genres] for re in ratings_export))
+      export_file.writerow(["original_title", "international_title", "title", "year", "rate", "my_rate", "favorite", "view_date", "duration", "genres", "directors", "cast", "countries"])
+      export_file.writerows(list([re.original_title, re.international_title, re.title, re.year, re.rate, re.my_rate, re.favorite, re.view_date, re.duration, re.genres, re.directors, re.cast, re.countries] for re in ratings_export))
 
-    self.logger.info(f"Exported information about {len(ratings_export)} movies for user {user_id}")
+    self.logger.info(f"Exported information about {len(ratings_export)} movies for user {user_details.name}")
+
+
+  def export_all(self) -> None:
+    users = self.db.get_all_users()
+
+    for user_details in users:
+      self.export(user_details)
+    
+    self.logger.info(f"Exported information about movies for all {len(users)} users completed!")
+
+
+  def __get_valid_filename__(self, name: str) -> str:
+      s = str(name).strip().replace(" ", "_")
+      s = re.sub(r"(?u)[^-\w.]", "", s)
+      return s

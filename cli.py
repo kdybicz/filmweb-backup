@@ -24,8 +24,8 @@ if __name__ == "__main__":
 
   try:
     filmweb = FilmwebBackup.from_secret(secret)
-    user = filmweb.backup()
-    filmweb.export(user.id)
+    filmweb.backup()
+    filmweb.export_all()
   except FilmwebError as e:
     logger.error(e)
     sys.exit(-1)
