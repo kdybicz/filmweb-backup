@@ -2,7 +2,7 @@ import logging
 import requests
 import time
 
-from .data import Director, Genre, Movie, MovieRating, UserDetails, UserRating
+from .data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
 class FilmwebAPI:
   def __init__(self):
@@ -10,43 +10,45 @@ class FilmwebAPI:
 
 
   def fetch_movie_details(self, movie_id: int) -> Movie:
-      movie_details = self.fetch(f"/film/{movie_id}/preview")
+    movie_details = self.fetch(f"/film/{movie_id}/preview")
 
-      self.logger.debug(f"Got movie details for movie id {movie_id}")
+    self.logger.debug(f"Got movie details for movie id {movie_id}")
 
-      return Movie(
-        id = movie_id,
-        title = movie_details["title"]["title"] if "title" in movie_details else None,
-        originalTitle = movie_details["originalTitle"]["title"],
-        internationalTitle = movie_details["internationalTitle"]["title"] if "internationalTitle" in movie_details else None,
-        year = movie_details["year"],
-        genres = list(Genre(genre["id"], genre["name"]["text"]) for genre in movie_details["genres"]),
-        duration = movie_details["duration"],
-        directors = list(Director(director["id"], director["name"]) for director in movie_details["directors"]),
-      )
+    return Movie(
+      id = movie_id,
+      title = movie_details["title"]["title"] if "title" in movie_details else None,
+      originalTitle = movie_details["originalTitle"]["title"],
+      internationalTitle = movie_details["internationalTitle"]["title"] if "internationalTitle" in movie_details else None,
+      year = movie_details["year"],
+      genres = list(Genre(genre["id"], genre["name"]["text"]) for genre in movie_details["genres"]),
+      duration = movie_details["duration"],
+      directors = list(Director(director["id"], director["name"]) for director in movie_details["directors"]),
+      cast = list(Cast(cast["id"], cast["name"]) for cast in movie_details["mainCast"]),
+      countries = list(Country(country["id"], country["code"]) for country in movie_details["countries"]),
+    )
 
 
   def fetch_movie_rating(self, movie_id: int) -> MovieRating:
-      movie_rating = self.fetch(f"/film/{movie_id}/rating")
+    movie_rating = self.fetch(f"/film/{movie_id}/rating")
 
-      self.logger.debug(f"Got rating details for movie id {movie_id}")
+    self.logger.debug(f"Got rating details for movie id {movie_id}")
 
-      return MovieRating(
-        movie_id = movie_id,
-        count = movie_rating["count"] if "count" in movie_rating else 0,
-        rate = movie_rating["rate"] if "rate" in movie_rating else 0.0,
-        countWantToSee = movie_rating["countWantToSee"] if "countWantToSee" in movie_rating else 0,
-        countVote1 = movie_rating["countVote1"] if "countVote1" in movie_rating else 0,
-        countVote2 = movie_rating["countVote2"] if "countVote2" in movie_rating else 0,
-        countVote3 = movie_rating["countVote3"] if "countVote3" in movie_rating else 0,
-        countVote4 = movie_rating["countVote4"] if "countVote4" in movie_rating else 0,
-        countVote5 = movie_rating["countVote5"] if "countVote5" in movie_rating else 0,
-        countVote6 = movie_rating["countVote6"] if "countVote6" in movie_rating else 0,
-        countVote7 = movie_rating["countVote7"] if "countVote7" in movie_rating else 0,
-        countVote8 = movie_rating["countVote8"] if "countVote8" in movie_rating else 0,
-        countVote9 = movie_rating["countVote9"] if "countVote9" in movie_rating else 0,
-        countVote10 = movie_rating["countVote10"] if "countVote10" in movie_rating else 0,
-      )
+    return MovieRating(
+      movie_id = movie_id,
+      count = movie_rating["count"] if "count" in movie_rating else 0,
+      rate = movie_rating["rate"] if "rate" in movie_rating else 0.0,
+      countWantToSee = movie_rating["countWantToSee"] if "countWantToSee" in movie_rating else 0,
+      countVote1 = movie_rating["countVote1"] if "countVote1" in movie_rating else 0,
+      countVote2 = movie_rating["countVote2"] if "countVote2" in movie_rating else 0,
+      countVote3 = movie_rating["countVote3"] if "countVote3" in movie_rating else 0,
+      countVote4 = movie_rating["countVote4"] if "countVote4" in movie_rating else 0,
+      countVote5 = movie_rating["countVote5"] if "countVote5" in movie_rating else 0,
+      countVote6 = movie_rating["countVote6"] if "countVote6" in movie_rating else 0,
+      countVote7 = movie_rating["countVote7"] if "countVote7" in movie_rating else 0,
+      countVote8 = movie_rating["countVote8"] if "countVote8" in movie_rating else 0,
+      countVote9 = movie_rating["countVote9"] if "countVote9" in movie_rating else 0,
+      countVote10 = movie_rating["countVote10"] if "countVote10" in movie_rating else 0,
+    )
 
 
   def fetch_user_ratings(self, jwt: str) -> list[UserRating]:

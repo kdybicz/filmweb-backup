@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call, patch, MagicMock
 
 from backup.api import FilmwebAPI, FilmwebError
-from backup.data import Director, Genre, Movie, MovieRating, UserDetails, UserRating
+from backup.data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
 class TestApi(unittest.TestCase):
   def setUp(self):
@@ -269,6 +269,18 @@ class TestApi(unittest.TestCase):
               "name": "Sergio Pablos"
           }
       ],
+      "mainCast": [
+          {
+              "id": 46520,
+              "name": "Jason Schwartzman"
+          }
+      ],
+      "countries": [
+          {
+              "id": 20,
+              "code": "ES"
+          }
+      ],
     }
     mock_fetch.return_value = mock_details
 
@@ -283,7 +295,9 @@ class TestApi(unittest.TestCase):
       year = 2006,
       genres = [Genre(24, "Thriller"), Genre(77, "Animacja dla dorosłych")],
       directors = [Director(1161002, "Sergio Pablos")],
-      duration = 96
+      duration = 96,
+      countries = [Country(20, "ES")],
+      cast = [Cast(46520, "Jason Schwartzman")],
     ))
     # and
     mock_fetch.assert_called_once_with("/film/743825/preview")
@@ -322,6 +336,18 @@ class TestApi(unittest.TestCase):
               "name": "Sergio Pablos"
           }
       ],
+      "mainCast": [
+          {
+              "id": 46520,
+              "name": "Jason Schwartzman"
+          }
+      ],
+      "countries": [
+          {
+              "id": 20,
+              "code": "ES"
+          }
+      ],
     }
     mock_fetch.return_value = mock_details
 
@@ -336,7 +362,9 @@ class TestApi(unittest.TestCase):
       year = 2006,
       genres = [Genre(24, "Thriller"), Genre(77, "Animacja dla dorosłych")],
       directors = [Director(1161002, "Sergio Pablos")],
-      duration = 96
+      duration = 96,
+      countries = [Country(20, "ES")],
+      cast = [Cast(46520, "Jason Schwartzman")],
     ))
     # and
     mock_fetch.assert_called_once_with("/film/743825/preview")

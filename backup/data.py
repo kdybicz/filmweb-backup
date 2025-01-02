@@ -11,6 +11,16 @@ class Director:
   name: str
 
 @dataclass(eq=True, repr=True)
+class Cast:
+  id: int
+  name: str
+
+@dataclass(eq=True, repr=True)
+class Country:
+  id: int
+  code: str
+
+@dataclass(eq=True, repr=True)
 class Movie:
   id: int
   title: str | None
@@ -20,6 +30,8 @@ class Movie:
   genres: list[Genre]
   duration: int
   directors: list[Director]
+  cast: list[Cast]
+  countries: list[Country]
 
 @dataclass(eq=True, repr=True)
 class MovieRating:
