@@ -14,10 +14,10 @@ class MovieRatingDetails:
   genres: str
 
 class FilmwebDB:
-  def __init__(self):
-    self.logger = logging.getLogger('filmweb.db')
+  def __init__(self, name: str = "filmweb.db"):
+    self.logger = logging.getLogger("filmweb.db")
 
-    self.con = sqlite3.connect("filmweb.db")
+    self.con = sqlite3.connect(name)
 
     cur = self.con.cursor()
     try:
@@ -114,6 +114,7 @@ class FilmwebDB:
 
         CREATE TRIGGER IF NOT EXISTS movie_inserted AFTER INSERT ON movie
         FOR EACH ROW
+        WHEN NEW.last_updated IS NULL
         BEGIN
           UPDATE movie SET last_updated = datetime() WHERE id = NEW.id;
         END;
@@ -125,6 +126,7 @@ class FilmwebDB:
         END;
         CREATE TRIGGER IF NOT EXISTS user_inserted AFTER INSERT ON user
         FOR EACH ROW
+        WHEN NEW.last_updated IS NULL
         BEGIN
           UPDATE user SET last_updated = datetime() WHERE id = NEW.id;
         END;
