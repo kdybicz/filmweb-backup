@@ -161,8 +161,6 @@ class FilmwebAPI:
       "X-Locale": "pl_PL"
     }
 
-    cookies = {}
-
     url = f"https://www.filmweb.pl/api/v1{path}"
 
     time.sleep(0.1) # TODO: remove, rethink
@@ -174,6 +172,7 @@ class FilmwebAPI:
         time.sleep(1)
       retry += 1
 
+      cookies = {}
       if authenticate is True:
         cookies["JWT"] = self.__token__
 
@@ -182,7 +181,7 @@ class FilmwebAPI:
         response.raise_for_status()
 
         if response.status_code == 204:
-            return None
+          return None
 
         return response.json()
       except requests.exceptions.Timeout:

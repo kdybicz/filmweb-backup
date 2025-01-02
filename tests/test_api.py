@@ -5,7 +5,7 @@ from unittest.mock import Mock, call, patch, MagicMock
 from backup.api import FilmwebAPI, FilmwebError
 from backup.data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
-class TestApi(unittest.TestCase):
+class TestFilmwebAPI(unittest.TestCase):
   @patch("backup.api.requests.post")
   def setUp(self, mock_requests: Mock):
     mock_response = MagicMock()
@@ -49,6 +49,32 @@ class TestApi(unittest.TestCase):
     self.assertEqual(e.exception.args[0], "Failed to fetch data - 401: Unauthorized")
     # and
     mock_requests.assert_called_once()
+
+  @patch("backup.api.requests.get")
+  @patch("backup.api.FilmwebAPI.fetch_token")
+  def test_fetch_fails_updates_jwt_token(self, mock_fetch_token: Mock, mock_requests: Mock):
+    # given
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.json.return_value = {"status": "ok"}
+    mock_response.raise_for_status.side_effect = [requests.HTTPError(f"400 Client Error"), None]
+    mock_requests.return_value = mock_response
+    # and
+    mock_fetch_token.return_value = "new-jwt"
+
+    # when
+    self.api.fetch("/test", True)
+    # then
+    self.assertEqual(mock_requests.call_count, 2)
+    mock_requests.assert_has_calls([
+      call('https://www.filmweb.pl/api/v1/test', headers={'X-Locale': 'pl_PL'}, cookies={'JWT': 'jwt'}, timeout=10),
+      call().raise_for_status(),
+      call('https://www.filmweb.pl/api/v1/test', headers={'X-Locale': 'pl_PL'}, cookies={'JWT': 'new-jwt'}, timeout=10),
+      call().raise_for_status(),
+      call().json()
+    ])
+    # and
+    mock_fetch_token.assert_called_once()
 
   @patch("backup.api.requests.get")
   def test_fetch_204(self, mock_requests: Mock):
