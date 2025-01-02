@@ -5,8 +5,11 @@ import time
 from .data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
 class FilmwebAPI:
-  def __init__(self):
+  def __init__(self, secret: str):
     self.logger = logging.getLogger("filmweb.api")
+
+    self.__secret__ = secret
+    self.__token__ = self.fetch_token()
 
 
   def fetch_movie_details(self, movie_id: int) -> Movie:
@@ -51,11 +54,11 @@ class FilmwebAPI:
     )
 
 
-  def fetch_user_ratings(self, jwt: str) -> list[UserRating]:
+  def fetch_user_ratings(self) -> list[UserRating]:
     movies: list[UserRating] = []
     page = 1
     while (True):
-      response = self.fetch(f"/logged/vote/title/film?page={page}", jwt)
+      response = self.fetch(f"/logged/vote/title/film?page={page}", True)
       if (type(response) != list or len(response) == 0):
         break
 
@@ -76,8 +79,8 @@ class FilmwebAPI:
     return movies
 
 
-  def fetch_user_details(self, jwt: str) -> UserDetails:
-    response = self.fetch("/logged/info", jwt)
+  def fetch_user_details(self) -> UserDetails:
+    response = self.fetch("/logged/info", True)
 
     user_details = UserDetails(
       id = response["id"],
@@ -90,8 +93,8 @@ class FilmwebAPI:
     return user_details
 
 
-  def fetch_user_friends(self, jwt: str) -> list[UserDetails]:
-    response = self.fetch(f"/logged/friends", jwt)
+  def fetch_user_friends(self) -> list[UserDetails]:
+    response = self.fetch(f"/logged/friends", True)
 
     friends_details: list[UserDetails] = []
     for id, details in response.items():
@@ -111,11 +114,11 @@ class FilmwebAPI:
     return friends_details
 
 
-  def fetch_friend_ratings(self, friend_name: str, jwt: str) -> list[UserRating]:
+  def fetch_friend_ratings(self, friend_name: str) -> list[UserRating]:
     movies: list[UserRating] = []
     page = 1
     while (True):
-      response = self.fetch(f"/logged/friend/{friend_name}/vote/title/film?page={page}", jwt)
+      response = self.fetch(f"/logged/friend/{friend_name}/vote/title/film?page={page}", True)
       if (type(response) != list or len(response) == 0):
         break
 
@@ -136,14 +139,29 @@ class FilmwebAPI:
     return movies
 
 
-  def fetch(self, path: str, jwt: str | None = None):
+  def fetch_token(self) -> str:
+    cookies = {
+      "_artuser_prm": self.__secret__
+    }
+
+    try:
+      url = "https://www.filmweb.pl/api/v1/jwt"
+      response = requests.post(url, cookies=cookies, timeout=10)
+      response.raise_for_status()
+
+      self.logger.debug(f"Got the JWT token!")
+
+      return response.cookies.get("JWT")
+    except requests.exceptions.RequestException:
+      raise FilmwebInvalidTokenError("Failed to fetch JWT token!")
+
+
+  def fetch(self, path: str, authenticate: bool = False):
     headers = {
       "X-Locale": "pl_PL"
     }
 
     cookies = {}
-    if jwt is not None:
-      cookies["JWT"] = jwt
 
     url = f"https://www.filmweb.pl/api/v1{path}"
 
@@ -155,6 +173,9 @@ class FilmwebAPI:
         self.logger.warning(f"{retry} retry to fetch {url}")
         time.sleep(1)
       retry += 1
+
+      if authenticate is True:
+        cookies["JWT"] = self.__token__
 
       try:
         response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
@@ -168,7 +189,8 @@ class FilmwebAPI:
         continue
       except requests.exceptions.RequestException:
         if response.status_code == 400:
-          raise FilmwebInvalidTokenError("Invalid or expired JWT token!")
+          self.__token__ = self.fetch_token()
+          continue
         else:
           raise FilmwebError(f"Failed to fetch data - {response.status_code}: {response.text.strip()}")
 

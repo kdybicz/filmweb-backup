@@ -6,11 +6,11 @@ from .data import UserDetails
 from .db import FilmwebDB
 
 class FilmwebBackup:
-  def __init__(self):
+  def __init__(self, secret: str):
     self.logger = logging.getLogger('filmweb.backup')
 
     self.db = FilmwebDB()
-    self.api = FilmwebAPI()
+    self.api = FilmwebAPI(secret)
 
 
   def backup_movie(self, movie_id: int) -> None:
@@ -22,30 +22,30 @@ class FilmwebBackup:
       self.db.upsert_movie_rating(movie_rating)
 
 
-  def backup_user(self, user: UserDetails, jwt: str) -> None:
+  def backup_user(self, user: UserDetails) -> None:
     self.db.set_user_details(user)
 
-    ratings = self.api.fetch_user_ratings(jwt)
+    ratings = self.api.fetch_user_ratings()
     self.db.upsert_ratings(user.id, ratings)
 
     for rating in ratings:
       self.backup_movie(rating.movie_id)
 
-    friends = self.api.fetch_user_friends(jwt)
+    friends = self.api.fetch_user_friends()
     for friend in friends:
       self.db.set_user_details(friend)
 
-      friend_ratings = self.api.fetch_friend_ratings(friend.name, jwt)
+      friend_ratings = self.api.fetch_friend_ratings(friend.name)
       self.db.upsert_ratings(friend.id, friend_ratings)
 
       for rating in friend_ratings:
         self.backup_movie(rating.movie_id)
 
 
-  def backup(self, jwt: str) -> UserDetails:
-    user_details = self.api.fetch_user_details(jwt)
+  def backup(self) -> UserDetails:
+    user_details = self.api.fetch_user_details()
 
-    self.backup_user(user_details, jwt)
+    self.backup_user(user_details)
 
     return user_details
 

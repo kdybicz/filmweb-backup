@@ -18,13 +18,13 @@ def setup_logging(level=logging.DEBUG) -> logging.Logger:
   return logger
 
 if __name__ == '__main__':
-  jwt = ""
+  secret = ""
 
   logger = setup_logging()
 
   try:
-    filmweb = FilmwebBackup()
-    user = filmweb.backup(jwt)
+    filmweb = FilmwebBackup(secret)
+    user = filmweb.backup()
     filmweb.export(user.id)
   except FilmwebError as e:
     logger.error(e)
