@@ -6,7 +6,7 @@ from backup.api import FilmwebError
 from backup.backup import FilmwebBackup
 
 def setup_logging(level=logging.DEBUG) -> logging.Logger:
-  logger = logging.getLogger('filmweb')
+  logger = logging.getLogger("filmweb")
   logger.setLevel(level)
 
   # Create a console handler
@@ -17,13 +17,13 @@ def setup_logging(level=logging.DEBUG) -> logging.Logger:
 
   return logger
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   secret = ""
 
   logger = setup_logging()
 
   try:
-    filmweb = FilmwebBackup(secret)
+    filmweb = FilmwebBackup.from_secret(secret)
     user = filmweb.backup()
     filmweb.export(user.id)
   except FilmwebError as e:

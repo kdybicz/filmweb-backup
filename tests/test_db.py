@@ -5,7 +5,7 @@ import unittest
 from backup.db import FilmwebDB
 
 
-class TestFilmwebAPI(unittest.TestCase):
+class TestFilmwebDB(unittest.TestCase):
   def setUp(self):
     self.db = FilmwebDB("file::memory:")
 

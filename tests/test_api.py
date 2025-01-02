@@ -67,9 +67,9 @@ class TestFilmwebAPI(unittest.TestCase):
     # then
     self.assertEqual(mock_requests.call_count, 2)
     mock_requests.assert_has_calls([
-      call('https://www.filmweb.pl/api/v1/test', headers={'X-Locale': 'pl_PL'}, cookies={'JWT': 'jwt'}, timeout=10),
+      call("https://www.filmweb.pl/api/v1/test", headers={"X-Locale": "pl_PL"}, cookies={"JWT": "jwt"}, timeout=10),
       call().raise_for_status(),
-      call('https://www.filmweb.pl/api/v1/test', headers={'X-Locale': 'pl_PL'}, cookies={'JWT': 'new-jwt'}, timeout=10),
+      call("https://www.filmweb.pl/api/v1/test", headers={"X-Locale": "pl_PL"}, cookies={"JWT": "new-jwt"}, timeout=10),
       call().raise_for_status(),
       call().json()
     ])

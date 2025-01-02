@@ -6,11 +6,19 @@ from .data import UserDetails
 from .db import FilmwebDB
 
 class FilmwebBackup:
-  def __init__(self, secret: str):
-    self.logger = logging.getLogger('filmweb.backup')
+  def __init__(self, db: FilmwebDB, api: FilmwebAPI):
+    self.logger = logging.getLogger("filmweb.backup")
 
-    self.db = FilmwebDB()
-    self.api = FilmwebAPI(secret)
+    self.db = db
+    self.api = api
+
+
+  @classmethod
+  def from_secret(cls, secret: str):
+    db = FilmwebDB()
+    api = FilmwebAPI(secret)
+
+    return cls(db, api)
 
 
   def backup_movie(self, movie_id: int) -> None:
@@ -53,9 +61,9 @@ class FilmwebBackup:
   def export(self, user_id: int):
     ratings_export = self.db.get_user_rating(user_id)
 
-    with open('filmweb.csv', 'w', newline='') as csv_file:
-      export_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-      export_file.writerow(['title', 'year', 'rate', 'favorite', 'view_date', 'genres'])
+    with open("filmweb.csv", "w", newline="") as csv_file:
+      export_file = csv.writer(csv_file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+      export_file.writerow(["title", "year", "rate", "favorite", "view_date", "genres"])
       export_file.writerows(list([re.title, re.year, re.rate, re.favorite, re.view_date, re.genres] for re in ratings_export))
 
     self.logger.info(f"Exported information about {len(ratings_export)} movies for user {user_id}")
