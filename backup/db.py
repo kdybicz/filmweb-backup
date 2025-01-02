@@ -86,6 +86,28 @@ class FilmwebDB:
           FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE ON UPDATE CASCADE,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE
         );
+        CREATE TABLE IF NOT EXISTS cast(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS movie_cast(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          movie_id INTEGER NOT NULL,
+          cast_id INTEGER NOT NULL,
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (cast_id) REFERENCES cast (id) ON DELETE CASCADE ON UPDATE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS country(
+          id INTEGER PRIMARY KEY,
+          code TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS movie_countries(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          movie_id INTEGER NOT NULL,
+          country_id INTEGER NOT NULL,
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (country_id) REFERENCES country (id) ON DELETE CASCADE ON UPDATE CASCADE
+        );
 
         CREATE TRIGGER IF NOT EXISTS movie_inserted AFTER INSERT ON movie
         FOR EACH ROW
@@ -149,6 +171,18 @@ class FilmwebDB:
 
       movie_directors = list({ "movie_id": movie.id, "director_id": director.id } for director in movie.directors)
       cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id) ON CONFLICT DO NOTHING;", movie_directors)
+
+      cast = list(asdict(cast) for cast in movie.cast)
+      cur.executemany("INSERT INTO cast (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", cast)
+
+      movie_cast = list({ "movie_id": movie.id, "cast_id": cast.id } for cast in movie.cast)
+      cur.executemany("INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id) ON CONFLICT DO NOTHING;", movie_cast)
+
+      countries = list(asdict(country) for country in movie.countries)
+      cur.executemany("INSERT INTO country (id, code) VALUES (:id, :code) ON CONFLICT DO NOTHING;", countries)
+
+      movie_countries = list({ "movie_id": movie.id, "country_id": country.id } for country in movie.countries)
+      cur.executemany("INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id) ON CONFLICT DO NOTHING;", movie_countries)
 
       self.con.commit()
 
