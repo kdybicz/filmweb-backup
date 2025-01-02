@@ -6,8 +6,34 @@ from backup.api import FilmwebAPI, FilmwebError
 from backup.data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
 class TestApi(unittest.TestCase):
-  def setUp(self):
-    self.api = FilmwebAPI()
+  @patch("backup.api.requests.post")
+  def setUp(self, mock_requests: Mock):
+    mock_response = MagicMock()
+    mock_response.cookies.get.return_value = "jwt"
+    mock_requests.return_value = mock_response
+
+    self.api = FilmwebAPI("secret")
+
+  @patch("backup.api.requests.post")
+  def test_fetch_token(self, mock_requests: Mock):
+    # given
+    mock_response = MagicMock()
+    mock_response.cookies.get.return_value = "jwt"
+    mock_requests.return_value = mock_response
+    # and
+    api = FilmwebAPI("secret")
+
+    # when
+    result = api.fetch_token()
+    # then
+    self.assertEqual(result, "jwt")
+    # and
+    self.assertEqual(mock_requests.call_count, 2)
+    mock_requests.assert_called_with(
+      "https://www.filmweb.pl/api/v1/jwt",
+      cookies={ "_artuser_prm": "secret" },
+      timeout=10
+    )
 
   @patch("backup.api.requests.get")
   def test_fetch_fails(self, mock_requests: Mock):
@@ -19,7 +45,7 @@ class TestApi(unittest.TestCase):
     mock_requests.return_value = mock_response
     # expect
     with self.assertRaises(FilmwebError) as e:
-      self.api.fetch("/test", "jwt")
+      self.api.fetch("/test", True)
     self.assertEqual(e.exception.args[0], "Failed to fetch data - 401: Unauthorized")
     # and
     mock_requests.assert_called_once()
@@ -33,7 +59,7 @@ class TestApi(unittest.TestCase):
     mock_requests.return_value = mock_response
 
     # when
-    result = self.api.fetch("/test", "jwt")
+    result = self.api.fetch("/test", True)
     # then
     self.assertIsNone(result)
     # and
@@ -53,7 +79,7 @@ class TestApi(unittest.TestCase):
     mock_requests.return_value = mock_response
 
     # when
-    result = self.api.fetch("/test", "jwt")
+    result = self.api.fetch("/test", True)
     # then
     self.assertEqual(result, {"status": "ok"})
     # and
@@ -78,11 +104,11 @@ class TestApi(unittest.TestCase):
     mock_fetch.return_value = mock_details
 
     # when
-    result = self.api.fetch_user_details("jwt")
+    result = self.api.fetch_user_details()
     # then
     self.assertEqual(result, UserDetails(1234567, "johndoe", "John Doe"))
     # and
-    mock_fetch.assert_called_once_with("/logged/info", "jwt")
+    mock_fetch.assert_called_once_with("/logged/info", True)
 
   @patch("backup.api.FilmwebAPI.fetch")
   def test_fetch_user_details_without_name(self, mock_fetch: Mock):
@@ -94,11 +120,11 @@ class TestApi(unittest.TestCase):
     mock_fetch.return_value = mock_details
 
     # when
-    result = self.api.fetch_user_details("jwt")
+    result = self.api.fetch_user_details()
     # then
     self.assertEqual(result, UserDetails(1234567, "johndoe", None))
     # and
-    mock_fetch.assert_called_once_with("/logged/info", "jwt")
+    mock_fetch.assert_called_once_with("/logged/info", True)
 
   @patch("backup.api.FilmwebAPI.fetch")
   def test_fetch_user_ratings(self, mock_fetch: Mock):
@@ -125,7 +151,7 @@ class TestApi(unittest.TestCase):
     ]
 
     # when
-    result = self.api.fetch_user_ratings("jwt")
+    result = self.api.fetch_user_ratings()
     # then
     self.assertEqual(result, [
         UserRating(
@@ -145,9 +171,9 @@ class TestApi(unittest.TestCase):
     # and
     self.assertEqual(mock_fetch.call_count, 3)
     mock_fetch.assert_has_calls([
-      call("/logged/vote/title/film?page=1", "jwt"),
-      call("/logged/vote/title/film?page=2", "jwt"),
-      call("/logged/vote/title/film?page=3", "jwt")
+      call("/logged/vote/title/film?page=1", True),
+      call("/logged/vote/title/film?page=2", True),
+      call("/logged/vote/title/film?page=3", True)
     ])
 
   @patch("backup.api.FilmwebAPI.fetch")
@@ -170,7 +196,7 @@ class TestApi(unittest.TestCase):
     mock_fetch.return_value = mock_details
 
     # when
-    result = self.api.fetch_user_friends("jwt")
+    result = self.api.fetch_user_friends()
     # then
     self.assertEqual(result, [
       UserDetails(1234567, "johndoe", None),
@@ -178,7 +204,7 @@ class TestApi(unittest.TestCase):
       UserDetails(123456789, "joedoe", "Joe Doe"),
     ])
     # and
-    mock_fetch.assert_called_once_with("/logged/friends", "jwt")
+    mock_fetch.assert_called_once_with("/logged/friends", True)
 
   @patch("backup.api.FilmwebAPI.fetch")
   def test_fetch_friend_ratings(self, mock_fetch: Mock):
@@ -205,7 +231,7 @@ class TestApi(unittest.TestCase):
     ]
 
     # when
-    result = self.api.fetch_friend_ratings("johndoe", "jwt")
+    result = self.api.fetch_friend_ratings("johndoe")
     # then
     self.assertEqual(result, [
         UserRating(
@@ -225,9 +251,9 @@ class TestApi(unittest.TestCase):
     # and
     self.assertEqual(mock_fetch.call_count, 3)
     mock_fetch.assert_has_calls([
-      call("/logged/friend/johndoe/vote/title/film?page=1", "jwt"),
-      call("/logged/friend/johndoe/vote/title/film?page=2", "jwt"),
-      call("/logged/friend/johndoe/vote/title/film?page=3", "jwt")
+      call("/logged/friend/johndoe/vote/title/film?page=1", True),
+      call("/logged/friend/johndoe/vote/title/film?page=2", True),
+      call("/logged/friend/johndoe/vote/title/film?page=3", True)
     ])
 
   @patch("backup.api.FilmwebAPI.fetch")
