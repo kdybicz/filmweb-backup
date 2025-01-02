@@ -2,7 +2,7 @@ import requests
 import unittest
 from unittest.mock import Mock, call, patch, MagicMock
 
-from backup.api import FilmwebAPI, FilmwebException
+from backup.api import FilmwebAPI, FilmwebError
 from backup.data import Director, Genre, Movie, MovieRating, UserDetails, UserRating
 
 class TestApi(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestApi(unittest.TestCase):
     mock_response.raise_for_status.side_effect = requests.HTTPError(f"401 Client Error: Unauthorized for url: https://example.com")
     mock_requests.return_value = mock_response
     # expect
-    with self.assertRaises(FilmwebException) as e:
+    with self.assertRaises(FilmwebError) as e:
       self.api.fetch("/test", "jwt")
     self.assertEqual(e.exception.args[0], "Failed to fetch data - 401: Unauthorized")
     # and

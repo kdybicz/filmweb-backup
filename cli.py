@@ -2,7 +2,7 @@
 import logging
 import sys
 
-from backup.api import FilmwebException
+from backup.api import FilmwebError
 from backup.backup import FilmwebBackup
 
 def setup_logging(level=logging.DEBUG) -> logging.Logger:
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     filmweb = FilmwebBackup()
     user = filmweb.backup(jwt)
     filmweb.export(user.id)
-  except FilmwebException as e:
+  except FilmwebError as e:
     logger.error(e)
     sys.exit(-1)
 

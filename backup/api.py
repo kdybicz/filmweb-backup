@@ -165,11 +165,16 @@ class FilmwebAPI:
       except requests.exceptions.Timeout:
         continue
       except requests.exceptions.RequestException:
-        raise FilmwebException(f"Failed to fetch data - {response.status_code}: {response.text.strip()}")
+        if response.status_code == 400:
+          raise FilmwebInvalidTokenError("Invalid or expired JWT token!")
+        else:
+          raise FilmwebError(f"Failed to fetch data - {response.status_code}: {response.text.strip()}")
 
-    raise FilmwebException(f"Failed to fetch data after {retry} retries!")
+    raise FilmwebError(f"Failed to fetch data after {retry} retries!")
 
 
-class FilmwebException(Exception):
-  """Error raised when Filmweb requests fails"""
+class FilmwebError(Exception):
+  pass
+
+class FilmwebInvalidTokenError(FilmwebError):
   pass
