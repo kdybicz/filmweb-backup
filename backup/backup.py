@@ -14,7 +14,7 @@ class FilmwebBackup:
 
 
   def backup_movie(self, movie_id: int) -> None:
-    if self.db.should_update_movie(movie_id) is False:
+    if self.db.should_update_movie(movie_id) is True:
       movie_details = self.api.fetch_movie_details(movie_id)
       self.db.upsert_movie(movie_details)
 

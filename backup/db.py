@@ -150,7 +150,18 @@ class FilmwebDB:
   def should_update_movie(self, movie_id: int) -> bool:
     cur = self.con.cursor()
     try:
-      cur.execute("SELECT EXISTS (SELECT 1 FROM movie WHERE id=:id AND unixepoch() - unixepoch(last_updated) > 86400 LIMIT 1);", ({ "id": movie_id }))
+      cur.execute("""
+        SELECT 
+          CASE 
+            WHEN NOT EXISTS (
+              SELECT 1 FROM movie WHERE id = :id
+            ) THEN 1
+            WHEN EXISTS (
+              SELECT 1 FROM movie WHERE id = :id AND (last_updated IS NULL OR unixepoch() - unixepoch(last_updated) > 86400)
+            ) THEN 1
+            ELSE 0
+          END
+      """, ({ "id": movie_id }))
       return cur.fetchone()[0] == 1
     finally:
       cur.close()

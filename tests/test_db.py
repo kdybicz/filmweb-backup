@@ -108,3 +108,31 @@ class TestFilmwebAPI(unittest.TestCase):
     result = cur.execute("SELECT last_updated FROM user WHERE id = 1;")
     # then
     self.assertEqual(result.fetchone()[0], "2001-01-01 00:00:00")
+
+  def test_should_update_movie_no_movie(self):
+    # when
+    result = self.db.should_update_movie(1)
+    # then
+    self.assertTrue(result)
+
+  def test_should_update_movie_fresh_movie(self):
+    # given
+    cur = self.db.con.cursor()
+    cur.execute("INSERT INTO movie (id, orig_title, year) VALUES (1, 'John Doe Movie', 2020);")
+
+    # when
+    result = self.db.should_update_movie(1)
+    # then
+    self.assertFalse(result)
+
+  def test_should_update_movie_stale_movie(self):
+    # given
+    cur = self.db.con.cursor()
+    cur.execute("INSERT INTO movie (id, last_updated, orig_title, year) VALUES (1, '2000-01-01 00:00:00', 'John Doe Movie', 2020);")
+
+    # when
+    result = self.db.should_update_movie(1)
+    # then
+    self.assertTrue(result)
+
+
