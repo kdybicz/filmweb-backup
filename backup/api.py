@@ -20,11 +20,11 @@ class FilmwebAPI:
       originalTitle = movie_details["originalTitle"]["title"],
       internationalTitle = movie_details["internationalTitle"]["title"] if "internationalTitle" in movie_details else None,
       year = movie_details["year"],
-      genres = list(Genre(genre["id"], genre["name"]["text"]) for genre in movie_details["genres"]),
-      duration = movie_details["duration"],
-      directors = list(Director(director["id"], director["name"]) for director in movie_details["directors"]),
-      cast = list(Cast(cast["id"], cast["name"]) for cast in movie_details["mainCast"]),
-      countries = list(Country(country["id"], country["code"]) for country in movie_details["countries"]),
+      genres = list(Genre(genre["id"], genre["name"]["text"]) for genre in movie_details["genres"]) if "genres" in movie_details else [],
+      duration = movie_details["duration"] if "duration" in movie_details else None,
+      directors = list(Director(director["id"], director["name"]) for director in movie_details["directors"]) if "directors" in movie_details else [],
+      cast = list(Cast(cast["id"], cast["name"]) for cast in movie_details["mainCast"]) if "mainCast" in movie_details else [],
+      countries = list(Country(country["id"], country["code"]) for country in movie_details["countries"]) if "countries" in movie_details else [],
     )
 
 
