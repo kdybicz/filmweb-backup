@@ -21,14 +21,98 @@ class FilmwebDB:
 
     cur = self.con.cursor()
     try:
-      cur.execute("CREATE TABLE IF NOT EXISTS movie (id INTEGER PRIMARY KEY, title TEXT NOT NULL, year INTEGER NOT NULL);")
-      cur.execute("CREATE TABLE IF NOT EXISTS movie_rating (id INTEGER PRIMARY KEY AUTOINCREMENT, movie_id INTEGER NOT NULL, count INTEGER NOT NULL, rate REAL NOT NULL, countWantToSee INTEGER NOT NULL, countVote1 INTEGER NOT NULL, countVote2 INTEGER NOT NULL, countVote3 INTEGER NOT NULL, countVote4 INTEGER NOT NULL, countVote5 INTEGER NOT NULL, countVote6 INTEGER NOT NULL, countVote7 INTEGER NOT NULL, countVote8 INTEGER NOT NULL, countVote9 INTEGER NOT NULL, countVote10 INTEGER NOT NULL, FOREIGN KEY (movie_id) REFERENCES movie (id));")
-      cur.execute("CREATE TABLE IF NOT EXISTS genre (id INTEGER PRIMARY KEY, name TEXT NOT NULL);")
-      cur.execute("CREATE TABLE IF NOT EXISTS movie_genres (id INTEGER PRIMARY KEY AUTOINCREMENT, movie_id INTEGER NOT NULL, genre_id INTEGER NOT NULL, FOREIGN KEY (movie_id) REFERENCES movie (id), FOREIGN KEY (genre_id) REFERENCES genre (id));")
-      cur.execute("CREATE TABLE IF NOT EXISTS director (id INTEGER PRIMARY KEY, name TEXT NOT NULL);")
-      cur.execute("CREATE TABLE IF NOT EXISTS movie_directors (id INTEGER PRIMARY KEY AUTOINCREMENT, movie_id INTEGER NOT NULL, director_id INTEGER NOT NULL, FOREIGN KEY (movie_id) REFERENCES movie (id), FOREIGN KEY (director_id) REFERENCES director (id));")
-      cur.execute("CREATE TABLE IF NOT EXISTS user (id INTEGER PRIMARY KEY, name TEXT NOT NULL, display_name TEXT);")
-      cur.execute("CREATE TABLE IF NOT EXISTS rating (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, movie_id INTEGER NOT NULL, rate INTEGER NOT NULL, favorite INTEGER NOT NULL, view_date INTEGER NOT NULL, FOREIGN KEY (user_id) REFERENCES user (id), FOREIGN KEY (movie_id) REFERENCES movie (id));")
+      cur.executescript("""
+        BEGIN;
+
+        CREATE TABLE IF NOT EXISTS movie(
+          id INTEGER PRIMARY KEY,
+          last_updated TEXT,
+          title TEXT NOT NULL,
+          year INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS movie_rating(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          movie_id INTEGER NOT NULL,
+          count INTEGER NOT NULL,
+          rate REAL NOT NULL,
+          countWantToSee INTEGER NOT NULL,
+          countVote1 INTEGER NOT NULL,
+          countVote2 INTEGER NOT NULL,
+          countVote3 INTEGER NOT NULL,
+          countVote4 INTEGER NOT NULL,
+          countVote5 INTEGER NOT NULL,
+          countVote6 INTEGER NOT NULL,
+          countVote7 INTEGER NOT NULL,
+          countVote8 INTEGER NOT NULL,
+          countVote9 INTEGER NOT NULL,
+          countVote10 INTEGER NOT NULL,
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS genre(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS movie_genres(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          movie_id INTEGER NOT NULL,
+          genre_id INTEGER NOT NULL,
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (genre_id) REFERENCES genre (id) ON DELETE CASCADE ON UPDATE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS director(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS movie_directors(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          movie_id INTEGER NOT NULL,
+          director_id INTEGER NOT NULL,
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (director_id) REFERENCES director (id) ON DELETE CASCADE ON UPDATE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS user(
+          id INTEGER PRIMARY KEY,
+          last_updated TEXT,
+          name TEXT NOT NULL,
+          display_name TEXT
+        );
+        CREATE TABLE IF NOT EXISTS rating(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          movie_id INTEGER NOT NULL,
+          rate INTEGER NOT NULL,
+          favorite INTEGER NOT NULL,
+          view_date INTEGER NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE
+        );
+
+        CREATE TRIGGER IF NOT EXISTS movie_inserted AFTER INSERT ON movie
+        FOR EACH ROW
+        BEGIN
+          UPDATE movie SET last_updated = datetime() WHERE id = NEW.id;
+        END;
+        CREATE TRIGGER IF NOT EXISTS movie_updated AFTER UPDATE ON movie
+        FOR EACH ROW
+        WHEN OLD.last_updated = NEW.last_updated
+        BEGIN
+          UPDATE movie SET last_updated = datetime() WHERE id = NEW.id;
+        END;
+        CREATE TRIGGER IF NOT EXISTS user_inserted AFTER INSERT ON user
+        FOR EACH ROW
+        BEGIN
+          UPDATE user SET last_updated = datetime() WHERE id = NEW.id;
+        END;
+        CREATE TRIGGER IF NOT EXISTS user_updated AFTER UPDATE ON user
+        FOR EACH ROW
+        WHEN OLD.last_updated = NEW.last_updated
+        BEGIN
+          UPDATE user SET last_updated = datetime() WHERE id = NEW.id;
+        END;
+
+        COMMIT;
+      """)
+
       self.con.commit()
 
       self.logger.debug("Database initialized!")
@@ -36,19 +120,19 @@ class FilmwebDB:
       cur.close()
 
 
-  def has_movie(self, movie_id: int) -> bool:
+  def should_update_movie(self, movie_id: int) -> bool:
     cur = self.con.cursor()
     try:
-      cur.execute("SELECT EXISTS (SELECT 1 FROM movie WHERE id=:id LIMIT 1);", ({ "id": movie_id }))
+      cur.execute("SELECT EXISTS (SELECT 1 FROM movie WHERE id=:id AND unixepoch() - unixepoch(last_updated) > 86400 LIMIT 1);", ({ "id": movie_id }))
       return cur.fetchone()[0] == 1
     finally:
       cur.close()
 
 
-  def insert_movie(self, movie: Movie):
+  def upsert_movie(self, movie: Movie):
     cur = self.con.cursor()
     try:
-      cur.execute("INSERT INTO movie (id, title, year) VALUES (:id, :title, :year);", {
+      cur.execute("REPLACE INTO movie (id, title, year) VALUES (:id, :title, :year);", {
         "id": movie.id,
         "title": movie.title if movie.title is not None else movie.internationalTitle if movie.internationalTitle is not None else movie.originalTitle,
         "year": movie.year,
@@ -58,13 +142,13 @@ class FilmwebDB:
       cur.executemany("INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", genres)
 
       movie_genres = list({ "movie_id": movie.id, "genre_id": genre.id } for genre in movie.genres)
-      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id);", movie_genres)
+      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id) ON CONFLICT DO NOTHING;", movie_genres)
 
       directors = list(asdict(director) for director in movie.directors)
       cur.executemany("INSERT INTO director (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", directors)
 
       movie_directors = list({ "movie_id": movie.id, "director_id": director.id } for director in movie.directors)
-      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id);", movie_directors)
+      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id) ON CONFLICT DO NOTHING;", movie_directors)
 
       self.con.commit()
 
@@ -76,7 +160,7 @@ class FilmwebDB:
   def upsert_movie_rating(self, rating: MovieRating):
     cur = self.con.cursor()
     try:
-      cur.execute("INSERT INTO movie_rating (movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (:movie_id, :count, :rate, :countWantToSee, :countVote1, :countVote2, :countVote3, :countVote4, :countVote5, :countVote6, :countVote7, :countVote8, :countVote9, :countVote10);", asdict(rating))
+      cur.execute("REPLACE INTO movie_rating (movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (:movie_id, :count, :rate, :countWantToSee, :countVote1, :countVote2, :countVote3, :countVote4, :countVote5, :countVote6, :countVote7, :countVote8, :countVote9, :countVote10);", asdict(rating))
 
       self.con.commit()
 
@@ -104,8 +188,7 @@ class FilmwebDB:
   def set_user_details(self, user_details: UserDetails):
     cur = self.con.cursor()
     try:
-      cur.execute("DELETE FROM user WHERE id=:id;", { "id": user_details.id })
-      cur.execute("INSERT INTO user (id, name, display_name) VALUES (:id, :name, :display_name);", asdict(user_details))
+      cur.execute("REPLACE INTO user (id, name, display_name) VALUES (:id, :name, :display_name);", asdict(user_details))
 
       self.con.commit()
 
