@@ -82,7 +82,7 @@ class TestFilmwebBackup(unittest.TestCase):
     mock_api.fetch_friend_ratings.assert_called_once_with(mock_friend_details.name)
     # and
     mock_db.should_update_user.assert_has_calls([
-      call(mock_user_details.id),
+      call(mock_user_details.id, 60),
       call(mock_friend_details.id)
     ])
     mock_db.upsert_user_details.assert_has_calls([
