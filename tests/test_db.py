@@ -136,3 +136,28 @@ class TestFilmwebDB(unittest.TestCase):
     self.assertTrue(result)
 
 
+  def test_should_update_user_no_user(self):
+    # when
+    result = self.db.should_update_user(1)
+    # then
+    self.assertTrue(result)
+
+  def test_should_update_user_fresh_user(self):
+    # given
+    cur = self.db.con.cursor()
+    cur.execute("INSERT INTO user (id, name) VALUES (1, 'johndoe');")
+
+    # when
+    result = self.db.should_update_user(1)
+    # then
+    self.assertFalse(result)
+
+  def test_should_update_user_stale_user(self):
+    # given
+    cur = self.db.con.cursor()
+    cur.execute("INSERT INTO user (id, last_updated, name) VALUES (1, '2000-01-01 00:00:00', 'johndoe');")
+
+    # when
+    result = self.db.should_update_user(1)
+    # then
+    self.assertTrue(result)

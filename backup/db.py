@@ -183,6 +183,26 @@ class FilmwebDB:
       cur.close()
 
 
+  def should_update_user(self, user_id: int, ttl: int = 86400) -> bool:
+    cur = self.con.cursor()
+    try:
+      cur.execute("""
+        SELECT 
+          CASE 
+            WHEN NOT EXISTS (
+              SELECT 1 FROM user WHERE id = :id
+            ) THEN 1
+            WHEN EXISTS (
+              SELECT 1 FROM user WHERE id = :id AND (last_updated IS NULL OR unixepoch() - unixepoch(last_updated) > :ttl)
+            ) THEN 1
+            ELSE 0
+          END
+      """, ({ "id": user_id, "ttl": ttl }))
+      return cur.fetchone()[0] == 1
+    finally:
+      cur.close()
+
+
   def upsert_movie(self, movie: Movie):
     cur = self.con.cursor()
     try:

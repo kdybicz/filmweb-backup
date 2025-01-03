@@ -70,6 +70,7 @@ class TestFilmwebBackup(unittest.TestCase):
     mock_api.fetch_movie_rating.return_value = mock_movie_rating
     # and
     mock_db = MagicMock()
+    mock_db.should_update_user.return_value = True
     # and
     backup = FilmwebBackup(mock_db, mock_api)
 
@@ -80,6 +81,10 @@ class TestFilmwebBackup(unittest.TestCase):
     mock_api.fetch_user_ratings.assert_called_once()
     mock_api.fetch_friend_ratings.assert_called_once_with(mock_friend_details.name)
     # and
+    mock_db.should_update_user.assert_has_calls([
+      call(mock_user_details.id),
+      call(mock_friend_details.id)
+    ])
     mock_db.upsert_user_details.assert_has_calls([
       call(mock_user_details),
       call(mock_friend_details)

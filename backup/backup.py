@@ -23,15 +23,22 @@ class FilmwebBackup:
 
 
   def backup_movie(self, movie_id: int) -> None:
-    if self.db.should_update_movie(movie_id) is True:
-      movie_details = self.api.fetch_movie_details(movie_id)
-      self.db.upsert_movie(movie_details)
+    if self.db.should_update_movie(movie_id) is False:
+      self.logger.debug(f"Movie {movie_id} details are up-to-date")
+      return
 
-      movie_rating = self.api.fetch_movie_rating(movie_id)
-      self.db.upsert_movie_rating(movie_rating)
+    movie_details = self.api.fetch_movie_details(movie_id)
+    self.db.upsert_movie(movie_details)
+
+    movie_rating = self.api.fetch_movie_rating(movie_id)
+    self.db.upsert_movie_rating(movie_rating)
 
 
   def backup_user(self, user: UserDetails) -> None:
+    if self.db.should_update_user(user.id, 60) is False: # TODO: change or remove TTL
+      self.logger.debug(f"User {user.name} details are up-to-date")
+      return None
+
     self.db.upsert_user_details(user)
 
     ratings = self.api.fetch_user_ratings()
@@ -43,6 +50,10 @@ class FilmwebBackup:
     friends = self.api.fetch_user_friends()
     if len(friends) > 0:
       for friend in friends:
+        if self.db.should_update_user(friend.id) is False:
+          self.logger.debug(f"Friend {friend.name} details are up-to-date")
+          continue
+
         self.db.upsert_user_details(friend)
 
         friend_ratings = self.api.fetch_friend_ratings(friend.name)
