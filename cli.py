@@ -1,8 +1,7 @@
 
+from argparse import ArgumentParser, Namespace
 import logging
-import sys
 
-from backup.api import FilmwebError
 from backup.backup import FilmwebBackup
 from backup.utils.logging import RotatingFileOnStartHandler
 
@@ -34,17 +33,68 @@ def setup_logging(level=logging.DEBUG, log_file='logs/app.log') -> logging.Logge
 
     return logger
 
-if __name__ == "__main__":
-  secret = ""
 
-  logger = setup_logging()
+def parse_args(args: list[str] | None = None) -> Namespace:
+    """Define CLI parameters"""
+
+    parser = ArgumentParser(
+        prog='filmweb',
+        description='Filmweb account information backup tool',
+    )
+    parser.add_argument(
+        '-t',
+        '--token',
+        help='User token from the _artuser_prm cookie',
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        '-e',
+        '--export',
+        help='Should export user details',
+        action='store_true',
+    )
+    parser.add_argument(
+        '-ee',
+        '--extended-export',
+        help='Should export user details incl. friends',
+        action='store_true',
+    )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        help='increase output verbosity',
+        action='store_true',
+    )
+
+    return parser.parse_args(args)
+
+def main(argv: list[str] | None = None) -> int:
+  """main function"""
+
+  args = parse_args(argv)
+
+  if args.verbose:
+      log_level = logging.DEBUG
+  else:
+      log_level = logging.INFO
+  logger = setup_logging(level=log_level)
 
   try:
-    filmweb = FilmwebBackup.from_secret(secret)
-    filmweb.backup()
-    filmweb.export_all()
-  except Exception as e:
-    logger.error(e)
-    sys.exit(-1)
+    filmweb = FilmwebBackup.from_secret(args.token)
+    user = filmweb.backup()
 
-  sys.exit(0)
+    if args.export or args.extended_export:
+      if args.extended_export:
+        filmweb.export_all()
+      else:
+        filmweb.export(user)          
+  except Exception as e:
+    logger.error(e, stack_info=True)
+    return 1
+
+  return 0
+
+
+if __name__ == '__main__':
+    exit(main())
