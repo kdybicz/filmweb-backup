@@ -2,7 +2,7 @@ import logging
 import requests
 import time
 
-from .data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
+from .data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating, UserSimilarity
 
 class FilmwebAPI:
   def __init__(self, secret: str):
@@ -112,6 +112,23 @@ class FilmwebAPI:
     self.logger.info(f"Found {len(friends_details)} friends!")
 
     return friends_details
+
+
+  def fetch_user_friends_similarities(self) -> list[UserSimilarity]:
+    response = self.fetch(f"/logged/friends/similarities", True)
+
+    friends_similarities: list[UserSimilarity] = []
+    for similarities in response:
+      friend_similarity = UserSimilarity(
+        id = similarities[0],
+        similarity = similarities[1],
+        movies = similarities[2],
+      )
+      friends_similarities.append(friend_similarity)
+
+    self.logger.info(f"Found {len(friends_similarities)} friends with similar taste!")
+
+    return friends_similarities
 
 
   def fetch_friend_ratings(self, friend_name: str) -> list[UserRating]:

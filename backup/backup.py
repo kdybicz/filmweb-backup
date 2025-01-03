@@ -32,7 +32,7 @@ class FilmwebBackup:
 
 
   def backup_user(self, user: UserDetails) -> None:
-    self.db.set_user_details(user)
+    self.db.upsert_user_details(user)
 
     ratings = self.api.fetch_user_ratings()
     self.db.upsert_ratings(user.id, ratings)
@@ -41,14 +41,18 @@ class FilmwebBackup:
       self.backup_movie(rating.movie_id)
 
     friends = self.api.fetch_user_friends()
-    for friend in friends:
-      self.db.set_user_details(friend)
+    if len(friends) > 0:
+      for friend in friends:
+        self.db.upsert_user_details(friend)
 
-      friend_ratings = self.api.fetch_friend_ratings(friend.name)
-      self.db.upsert_ratings(friend.id, friend_ratings)
+        friend_ratings = self.api.fetch_friend_ratings(friend.name)
+        self.db.upsert_ratings(friend.id, friend_ratings)
 
-      for rating in friend_ratings:
-        self.backup_movie(rating.movie_id)
+        for rating in friend_ratings:
+          self.backup_movie(rating.movie_id)
+      
+      similar_users = self.api.fetch_user_friends_similarities()
+      self.db.upsert_similar_users(user.id, similar_users)
 
 
   def backup(self) -> UserDetails:

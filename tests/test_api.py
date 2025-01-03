@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call, patch, MagicMock
 
 from backup.api import FilmwebAPI, FilmwebError
-from backup.data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating
+from backup.data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails, UserRating, UserSimilarity
 
 class TestFilmwebAPI(unittest.TestCase):
   @patch("backup.api.requests.post")
@@ -231,6 +231,28 @@ class TestFilmwebAPI(unittest.TestCase):
     ])
     # and
     mock_fetch.assert_called_once_with("/logged/friends", True)
+
+
+  @patch("backup.api.FilmwebAPI.fetch")
+  def test_fetch_user_friends_similarities(self, mock_fetch: Mock):
+    # given
+    mock_details = [
+      [ 1, 72.16858, 332 ],
+      [ 2, 71.22369, 96 ],
+      [ 3, 54.450515,  79 ]
+    ]
+    mock_fetch.return_value = mock_details
+
+    # when
+    result = self.api.fetch_user_friends_similarities()
+    # then
+    self.assertEqual(result, [
+      UserSimilarity(id=1, similarity=72.16858, movies=332),
+      UserSimilarity(id=2, similarity=71.22369, movies=96),
+      UserSimilarity(id=3, similarity=54.450515, movies=79),
+    ])
+    # and
+    mock_fetch.assert_called_once_with("/logged/friends/similarities", True)
 
   @patch("backup.api.FilmwebAPI.fetch")
   def test_fetch_friend_ratings(self, mock_fetch: Mock):

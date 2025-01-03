@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 import logging
 import sqlite3
 
-from .data import Genre, Movie, MovieRating, UserRating, UserDetails
+from .data import Genre, Movie, MovieRating, UserRating, UserDetails, UserSimilarity
 
 @dataclass
 class MovieRatingDetails:
@@ -85,6 +85,15 @@ class FilmwebDB:
           last_updated TEXT,
           name TEXT NOT NULL,
           display_name TEXT
+        );
+        CREATE TABLE IF NOT EXISTS user_similarity(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          similar_id INTEGER NOT NULL,
+          similarity REAL NOT NULL,
+          movies INTEGER NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (similar_id) REFERENCES user (id) ON DELETE CASCADE ON UPDATE CASCADE
         );
         CREATE TABLE IF NOT EXISTS rating(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -245,7 +254,7 @@ class FilmwebDB:
       cur.close()
 
 
-  def set_user_details(self, user_details: UserDetails):
+  def upsert_user_details(self, user_details: UserDetails):
     cur = self.con.cursor()
     try:
       cur.execute("REPLACE INTO user (id, name, display_name) VALUES (:id, :name, :display_name);", asdict(user_details))
@@ -277,6 +286,29 @@ class FilmwebDB:
       self.con.commit()
 
       self.logger.debug(f"Stored user ratings for user id {user_id}")
+    finally:
+      cur.close()
+
+
+  def upsert_similar_users(self, user_id: int, similar_users: list[UserSimilarity]):
+    if (len(similar_users) == 0):
+      return
+
+    cur = self.con.cursor()
+    try:
+      cur.execute("DELETE FROM user_similarity WHERE user_id=:user_id;", { "user_id": user_id })
+
+      rows = list({
+        "user_id": user_id,
+        "similar_id": similar.id,
+        "similarity": similar.similarity,
+        "movies": similar.movies,
+      } for similar in similar_users)
+      cur.executemany("INSERT INTO user_similarity (user_id, similar_id, similarity, movies) VALUES (:user_id, :similar_id, :similarity, :movies);", rows)
+
+      self.con.commit()
+
+      self.logger.debug(f"Stored similar users for user id {user_id}")
     finally:
       cur.close()
 

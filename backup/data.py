@@ -62,3 +62,9 @@ class UserDetails:
   id: int
   name: str
   display_name: str | None
+
+@dataclass(eq=True, repr=True)
+class UserSimilarity:
+  id: int
+  similarity: float
+  movies: int

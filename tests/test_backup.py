@@ -54,18 +54,20 @@ class TestFilmwebBackup(unittest.TestCase):
     mock_user_details.id = 1
     mock_user_rating = MagicMock()
     mock_user_rating.movie_id = 2
+    mock_user_similarity = MagicMock()
     mock_friend_details = MagicMock()
     mock_friend_details.id = 3
     mock_friend_details.name = "johndoe"
     mock_friend_rating = MagicMock()
     mock_friend_rating.movie_id = 2
+    mock_movie_rating = MagicMock()
     # and
     mock_api = MagicMock()
     mock_api.fetch_user_ratings.return_value = [mock_user_rating]
-    mock_movie_rating = MagicMock()
-    mock_api.fetch_movie_rating.return_value = mock_movie_rating
     mock_api.fetch_user_friends.return_value = [mock_friend_details]
+    mock_api.fetch_user_friends_similarities.return_value = [mock_user_similarity]
     mock_api.fetch_friend_ratings.return_value = [mock_friend_rating]
+    mock_api.fetch_movie_rating.return_value = mock_movie_rating
     # and
     mock_db = MagicMock()
     # and
@@ -74,10 +76,11 @@ class TestFilmwebBackup(unittest.TestCase):
     # when
     backup.backup_user(mock_user_details)
     # then
+    mock_api.fetch_user_friends_similarities.assert_called_once()
     mock_api.fetch_user_ratings.assert_called_once()
     mock_api.fetch_friend_ratings.assert_called_once_with(mock_friend_details.name)
     # and
-    mock_db.set_user_details.assert_has_calls([
+    mock_db.upsert_user_details.assert_has_calls([
       call(mock_user_details),
       call(mock_friend_details)
     ])
@@ -85,6 +88,7 @@ class TestFilmwebBackup(unittest.TestCase):
       call(mock_user_details.id, [mock_user_rating]),
       call(mock_friend_details.id, [mock_friend_rating])
     ])
+    mock_db.upsert_similar_users.assert_called_once_with(mock_user_details.id, [mock_user_similarity])
     # and
     mock_backup_movie.assert_has_calls([
       call(mock_user_rating.movie_id),

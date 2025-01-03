@@ -43,7 +43,7 @@ if __name__ == "__main__":
     filmweb = FilmwebBackup.from_secret(secret)
     filmweb.backup()
     filmweb.export_all()
-  except FilmwebError as e:
+  except Exception as e:
     logger.error(e)
     sys.exit(-1)
 
