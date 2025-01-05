@@ -11,6 +11,7 @@ class TestFilmwebBackup(unittest.TestCase):
     mock_api = MagicMock()
     mock_db = MagicMock()
     mock_db.should_update_movie.return_value = False
+    mock_db.should_update_movie_rating.return_value = False
     # and
     backup = FilmwebBackup(mock_db, mock_api)
 
@@ -18,6 +19,7 @@ class TestFilmwebBackup(unittest.TestCase):
     backup.backup_movie(1)
     # then
     mock_db.should_update_movie.assert_called_once_with(1)
+    mock_db.should_update_movie_rating.assert_called_once_with(1)
     # and
     mock_api.fetch_movie_details.assert_not_called()
     mock_db.upsert_movie.assert_not_called()
@@ -34,6 +36,7 @@ class TestFilmwebBackup(unittest.TestCase):
     # and
     mock_db = MagicMock()
     mock_db.should_update_movie.return_value = True
+    mock_db.should_update_movie_rating.return_value = True
     # and
     backup = FilmwebBackup(mock_db, mock_api)
 
@@ -41,6 +44,7 @@ class TestFilmwebBackup(unittest.TestCase):
     backup.backup_movie(1)
     # then
     mock_db.should_update_movie.assert_called_once_with(1)
+    mock_db.should_update_movie_rating.assert_called_once_with(1)
     # and
     mock_api.fetch_movie_details.assert_called_once_with(1)
     mock_db.upsert_movie.assert_called_once_with(mock_movie_details)

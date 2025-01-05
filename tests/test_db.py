@@ -66,8 +66,6 @@ class TestFilmwebDB(unittest.TestCase):
     self.assertEqual(result[0], "2000-01-01 00:00:00")
     self.assertEqual(result[1], "2001-01-01 00:00:00")
 
-
-
   def test_trigger_movie_rating_inserted_without_last_updated(self):
     # given
     cur = self.db.con.cursor()
@@ -124,8 +122,6 @@ class TestFilmwebDB(unittest.TestCase):
     # then
     self.assertEqual(result[0], "2000-01-01 00:00:00")
     self.assertEqual(result[1], "2001-01-01 00:00:00")
-
-
 
   def test_trigger_user_inserted_without_last_updated(self):
     # given

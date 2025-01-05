@@ -23,15 +23,17 @@ class FilmwebBackup:
 
 
   def backup_movie(self, movie_id: int) -> None:
-    if self.db.should_update_movie(movie_id) is False:
+    if self.db.should_update_movie(movie_id) is True:
+      movie_details = self.api.fetch_movie_details(movie_id)
+      self.db.upsert_movie(movie_details)
+    else:
       self.logger.debug(f"Movie {movie_id} details are up-to-date")
-      return
 
-    movie_details = self.api.fetch_movie_details(movie_id)
-    self.db.upsert_movie(movie_details)
-
-    movie_rating = self.api.fetch_movie_rating(movie_id)
-    self.db.upsert_movie_rating(movie_rating)
+    if self.db.should_update_movie_rating(movie_id) is True:
+      movie_rating = self.api.fetch_movie_rating(movie_id)
+      self.db.upsert_movie_rating(movie_rating)
+    else:
+      self.logger.debug(f"Movie rating for movie {movie_id} are up-to-date")
 
 
   def backup_user(self, user: UserDetails) -> None:
