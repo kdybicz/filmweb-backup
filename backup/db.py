@@ -267,28 +267,28 @@ class FilmwebDB:
 
       movie_genres = list({ "movie_id": movie.id, "genre_id": genre.id } for genre in movie.genres)
       cur.execute("DELETE FROM movie_genres WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id)", movie_genres)
+      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id) ON CONFLICT DO NOTHING;", movie_genres)
 
       directors = list(asdict(director) for director in movie.directors)
       cur.executemany("INSERT INTO director (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", directors)
 
       movie_directors = list({ "movie_id": movie.id, "director_id": director.id } for director in movie.directors)
       cur.execute("DELETE FROM movie_directors WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id)", movie_directors)
+      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id) ON CONFLICT DO NOTHING;", movie_directors)
 
       cast = list(asdict(cast) for cast in movie.cast)
       cur.executemany("INSERT INTO cast (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", cast)
 
       movie_cast = list({ "movie_id": movie.id, "cast_id": cast.id } for cast in movie.cast)
       cur.execute("DELETE FROM movie_cast WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id);", movie_cast)
+      cur.executemany("INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id) ON CONFLICT DO NOTHING;", movie_cast)
 
       countries = list(asdict(country) for country in movie.countries)
       cur.executemany("INSERT INTO country (id, code) VALUES (:id, :code) ON CONFLICT DO NOTHING;", countries)
 
       movie_countries = list({ "movie_id": movie.id, "country_id": country.id } for country in movie.countries)
       cur.execute("DELETE FROM movie_countries WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id);", movie_countries)
+      cur.executemany("INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id) ON CONFLICT DO NOTHING;", movie_countries)
 
       self.con.commit()
 
@@ -409,16 +409,16 @@ class FilmwebDB:
           GROUP_CONCAT(distinct c.name) cast,
           GROUP_CONCAT(distinct ct.code) countries
         FROM `movie` m
-          JOIN `rating` r ON r.movie_id = m.id
-          JOIN `movie_genres` mg ON mg.movie_id = m.id
-          JOIN `genre` g ON mg.genre_id = g.id
-          JOIN `movie_rating` mr ON mr.movie_id = m.id
-          JOIN `movie_directors` md ON md.movie_id = m.id
-          JOIN `director` d ON md.director_id = d.id
-          JOIN `movie_cast` mc ON mc.movie_id = m.id
-          JOIN `cast` c ON mc.cast_id = c.id
-          JOIN `movie_countries` mct ON mct.movie_id = m.id
-          JOIN `country` ct ON mct.country_id = ct.id
+          INNER JOIN `rating` r ON r.movie_id = m.id
+          INNER JOIN `movie_genres` mg ON mg.movie_id = m.id
+          INNER JOIN `genre` g ON mg.genre_id = g.id
+          INNER JOIN `movie_rating` mr ON mr.movie_id = m.id
+          INNER JOIN `movie_directors` md ON md.movie_id = m.id
+          INNER JOIN `director` d ON md.director_id = d.id
+          INNER JOIN `movie_cast` mc ON mc.movie_id = m.id
+          INNER JOIN `cast` c ON mc.cast_id = c.id
+          INNER JOIN `movie_countries` mct ON mct.movie_id = m.id
+          INNER JOIN `country` ct ON mct.country_id = ct.id
         WHERE r.user_id = :id
         GROUP BY m.id;
       """, ({ "id": user_id }))
