@@ -255,25 +255,29 @@ class FilmwebDB:
       cur.executemany("INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", genres)
 
       movie_genres = list({ "movie_id": movie.id, "genre_id": genre.id } for genre in movie.genres)
-      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id) ON CONFLICT DO NOTHING;", movie_genres)
+      cur.execute("DELETE FROM movie_genres WHERE movie_id = :movie_id;", { "movie_id": movie.id })
+      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id)", movie_genres)
 
       directors = list(asdict(director) for director in movie.directors)
       cur.executemany("INSERT INTO director (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", directors)
 
       movie_directors = list({ "movie_id": movie.id, "director_id": director.id } for director in movie.directors)
-      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id) ON CONFLICT DO NOTHING;", movie_directors)
+      cur.execute("DELETE FROM movie_directors WHERE movie_id = :movie_id;", { "movie_id": movie.id })
+      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id)", movie_directors)
 
       cast = list(asdict(cast) for cast in movie.cast)
       cur.executemany("INSERT INTO cast (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", cast)
 
       movie_cast = list({ "movie_id": movie.id, "cast_id": cast.id } for cast in movie.cast)
-      cur.executemany("INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id) ON CONFLICT DO NOTHING;", movie_cast)
+      cur.execute("DELETE FROM movie_cast WHERE movie_id = :movie_id;", { "movie_id": movie.id })
+      cur.executemany("INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id);", movie_cast)
 
       countries = list(asdict(country) for country in movie.countries)
       cur.executemany("INSERT INTO country (id, code) VALUES (:id, :code) ON CONFLICT DO NOTHING;", countries)
 
       movie_countries = list({ "movie_id": movie.id, "country_id": country.id } for country in movie.countries)
-      cur.executemany("INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id) ON CONFLICT DO NOTHING;", movie_countries)
+      cur.execute("DELETE FROM movie_countries WHERE movie_id = :movie_id;", { "movie_id": movie.id })
+      cur.executemany("INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id);", movie_countries)
 
       self.con.commit()
 
@@ -335,7 +339,7 @@ class FilmwebDB:
 
     cur = self.con.cursor()
     try:
-      cur.execute("DELETE FROM rating WHERE user_id=:user_id;", { "user_id": user_id })
+      cur.execute("DELETE FROM rating WHERE user_id = :user_id;", { "user_id": user_id })
 
       rows = list({
         "user_id": user_id,
@@ -359,7 +363,7 @@ class FilmwebDB:
 
     cur = self.con.cursor()
     try:
-      cur.execute("DELETE FROM user_similarity WHERE user_id=:user_id;", { "user_id": user_id })
+      cur.execute("DELETE FROM user_similarity WHERE user_id = :user_id;", { "user_id": user_id })
 
       rows = list({
         "user_id": user_id,

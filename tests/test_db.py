@@ -2,7 +2,7 @@
 import datetime
 import unittest
 
-from backup.data import Movie, MovieRating, UserDetails
+from backup.data import Cast, Country, Director, Genre, Movie, MovieRating, UserDetails
 from backup.db import FilmwebDB
 
 
@@ -283,7 +283,7 @@ class TestFilmwebDB(unittest.TestCase):
     # then
     self.assertTrue(result)
 
-  def test_upsert_user_details(self):
+  def test_upsert_user_details_on_conflict(self):
     # given
     cur = self.db.con.cursor()
 
@@ -310,7 +310,7 @@ class TestFilmwebDB(unittest.TestCase):
     self.assertIsNone(first_result[2])
     self.assertEqual(second_result[2], "John Doe")
 
-  def test_upsert_movie_rating(self):
+  def test_upsert_movie_rating_on_conflict(self):
     # given
     cur = self.db.con.cursor()
 
@@ -339,7 +339,7 @@ class TestFilmwebDB(unittest.TestCase):
     self.assertEqual(first_result[3], 0)
     self.assertEqual(second_result[3], 1)
 
-  def test_upsert_movie(self):
+  def test_upsert_movie_update_on_conflict(self):
     # given
     cur = self.db.con.cursor()
 
@@ -378,3 +378,96 @@ class TestFilmwebDB(unittest.TestCase):
     # and
     self.assertIsNone(first_result[3])
     self.assertEqual(second_result[3], "custom title")
+
+  def test_upsert_movie_add_new_relation(self):
+    # given
+    cur = self.db.con.cursor()
+
+    # when
+    movie = Movie(
+      id = 1,
+      title = None,
+      originalTitle = "title",
+      internationalTitle = None,
+      year = 2006,
+      genres = [Genre(1, "genre")],
+      directors = [Director(1, "director")],
+      duration = 96,
+      countries = [Country(1, "country")],
+      cast = [Cast(1, "cast")],
+    )
+    self.db.upsert_movie(movie)
+    # then
+    self.assertEqual(len(cur.execute("SELECT g.name FROM movie_genres mg INNER JOIN genre g ON mg.genre_id = g.id WHERE mg.movie_id = 1;").fetchall()), 1)
+    self.assertEqual(len(cur.execute("SELECT d.name FROM movie_directors md INNER JOIN director d ON md.director_id = d.id WHERE md.movie_id = 1;").fetchall()), 1)
+    self.assertEqual(len(cur.execute("SELECT c.code FROM movie_countries mc INNER JOIN country c ON mc.country_id = c.id WHERE mc.movie_id = 1;").fetchall()), 1)
+    self.assertEqual(len(cur.execute("SELECT c.name FROM movie_cast mc INNER JOIN cast c ON mc.cast_id = c.id WHERE mc.movie_id = 1;").fetchall()), 1)
+
+    # when
+    movie = Movie(
+      id = 1,
+      title = None,
+      originalTitle = "title",
+      internationalTitle = None,
+      year = 2006,
+      genres = [Genre(1, "genre"), Genre(2, "other genre")],
+      directors = [Director(1, "director"), Director(2, "other director")],
+      duration = 96,
+      countries = [Country(1, "country"), Country(2, "other country")],
+      cast = [Cast(1, "cast"), Cast(2, "other cast")],
+    )
+    self.db.upsert_movie(movie)
+    # then
+    self.assertEqual(len(cur.execute("SELECT g.name FROM movie_genres mg INNER JOIN genre g ON mg.genre_id = g.id WHERE mg.movie_id = 1;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT d.name FROM movie_directors md INNER JOIN director d ON md.director_id = d.id WHERE md.movie_id = 1;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT c.code FROM movie_countries mc INNER JOIN country c ON mc.country_id = c.id WHERE mc.movie_id = 1;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT c.name FROM movie_cast mc INNER JOIN cast c ON mc.cast_id = c.id WHERE mc.movie_id = 1;").fetchall()), 2)
+
+  def test_upsert_movie_remove_existing_relation(self):
+    # given
+    cur = self.db.con.cursor()
+
+    # when
+    movie = Movie(
+      id = 1,
+      title = None,
+      originalTitle = "title",
+      internationalTitle = None,
+      year = 2006,
+      genres = [Genre(1, "genre"), Genre(2, "other genre")],
+      directors = [Director(1, "director"), Director(2, "other director")],
+      duration = 96,
+      countries = [Country(1, "country"), Country(2, "other country")],
+      cast = [Cast(1, "cast"), Cast(2, "other cast")],
+    )
+    self.db.upsert_movie(movie)
+    # then
+    self.assertEqual(len(cur.execute("SELECT g.name FROM movie_genres mg INNER JOIN genre g ON mg.genre_id = g.id WHERE mg.movie_id = 1;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT d.name FROM movie_directors md INNER JOIN director d ON md.director_id = d.id WHERE md.movie_id = 1;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT c.code FROM movie_countries mc INNER JOIN country c ON mc.country_id = c.id WHERE mc.movie_id = 1;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT c.name FROM movie_cast mc INNER JOIN cast c ON mc.cast_id = c.id WHERE mc.movie_id = 1;").fetchall()), 2)
+
+    # when
+    movie = Movie(
+      id = 1,
+      title = None,
+      originalTitle = "title",
+      internationalTitle = None,
+      year = 2006,
+      genres = [Genre(1, "genre")],
+      directors = [Director(1, "director")],
+      duration = 96,
+      countries = [Country(1, "country")],
+      cast = [Cast(1, "cast")],
+    )
+    self.db.upsert_movie(movie)
+    # then
+    self.assertEqual(len(cur.execute("SELECT g.name FROM movie_genres mg INNER JOIN genre g ON mg.genre_id = g.id WHERE mg.movie_id = 1;").fetchall()), 1)
+    self.assertEqual(len(cur.execute("SELECT d.name FROM movie_directors md INNER JOIN director d ON md.director_id = d.id WHERE md.movie_id = 1;").fetchall()), 1)
+    self.assertEqual(len(cur.execute("SELECT c.code FROM movie_countries mc INNER JOIN country c ON mc.country_id = c.id WHERE mc.movie_id = 1;").fetchall()), 1)
+    self.assertEqual(len(cur.execute("SELECT c.name FROM movie_cast mc INNER JOIN cast c ON mc.cast_id = c.id WHERE mc.movie_id = 1;").fetchall()), 1)
+    # and
+    self.assertEqual(len(cur.execute("SELECT g.name FROM genre g;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT d.name FROM director d;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT c.code FROM country c;").fetchall()), 2)
+    self.assertEqual(len(cur.execute("SELECT c.name FROM cast c ;").fetchall()), 2)
