@@ -80,7 +80,7 @@ class TestFilmwebDB(unittest.TestCase):
     self.db.con.commit()
 
     # when
-    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE id = 1;").fetchone()
+    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE movie_id = 1;").fetchone()
     # then
     self.assertLessEqual(
       datetime.datetime.now(datetime.UTC) - datetime.datetime.fromisoformat(result[0]).replace(tzinfo=datetime.UTC),
@@ -98,7 +98,7 @@ class TestFilmwebDB(unittest.TestCase):
     self.db.con.commit()
 
     # when
-    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE id = 1;").fetchone()
+    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE movie_id = 1;").fetchone()
     # then
     self.assertIsNone(result[0])
     self.assertEqual(result[1], "2000-01-01 00:00:00")
@@ -109,11 +109,11 @@ class TestFilmwebDB(unittest.TestCase):
     cur.execute("INSERT INTO movie_rating (movie_id, date_created, last_updated, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (1, '2000-01-01 00:00:00', '2000-01-01 00:00:00', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);")
     self.db.con.commit()
     # and
-    cur.execute("UPDATE movie_rating SET countWantToSee = 1 WHERE id = 1;")
+    cur.execute("UPDATE movie_rating SET countWantToSee = 1 WHERE movie_id = 1;")
     self.db.con.commit()
 
     # when
-    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE id = 1;").fetchone()
+    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE movie_id = 1;").fetchone()
     # then
     self.assertEqual(result[0], "2000-01-01 00:00:00")
     self.assertLessEqual(
@@ -127,11 +127,11 @@ class TestFilmwebDB(unittest.TestCase):
     cur.execute("INSERT INTO movie_rating (movie_id, date_created, last_updated, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (1, '2000-01-01 00:00:00', '2000-01-01 00:00:00', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);")
     self.db.con.commit()
     # and
-    cur.execute("UPDATE movie_rating SET countWantToSee = 1, last_updated = '2001-01-01 00:00:00' WHERE id = 1;")
+    cur.execute("UPDATE movie_rating SET countWantToSee = 1, last_updated = '2001-01-01 00:00:00' WHERE movie_id = 1;")
     self.db.con.commit()
 
     # when
-    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE id = 1;").fetchone()
+    result = cur.execute("SELECT date_created, last_updated FROM movie_rating WHERE movie_id = 1;").fetchone()
     # then
     self.assertEqual(result[0], "2000-01-01 00:00:00")
     self.assertEqual(result[1], "2001-01-01 00:00:00")
@@ -318,26 +318,24 @@ class TestFilmwebDB(unittest.TestCase):
     cur.execute("INSERT INTO movie_rating (last_updated, movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES ('2000-01-01 00:00:00', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);")
     self.db.con.commit()
     # then
-    first_result = cur.execute("SELECT id, date_created, last_updated, countWantToSee FROM movie_rating WHERE movie_id = 1;").fetchone()
+    first_result = cur.execute("SELECT date_created, last_updated, countWantToSee FROM movie_rating WHERE movie_id = 1;").fetchone()
 
     # when
     movie_rating = MovieRating(movie_id=1, count=0, rate=0, countWantToSee=1, countVote1=0, countVote2=0, countVote3=0, countVote4=0, countVote5=0, countVote6=0, countVote7=0, countVote8=0, countVote9=0, countVote10=0)
     self.db.upsert_movie_rating(movie_rating)
     # then
-    second_result = cur.execute("SELECT id, date_created, last_updated, countWantToSee FROM movie_rating WHERE movie_id = 1;").fetchone()
+    second_result = cur.execute("SELECT date_created, last_updated, countWantToSee FROM movie_rating WHERE movie_id = 1;").fetchone()
 
     # expect
-    self.assertEqual(first_result[0], second_result[0])
-    # and
-    self.assertIsNone(first_result[1])
-    self.assertIsNone(second_result[1])
+    self.assertIsNone(first_result[0])
+    self.assertIsNone(second_result[0])
     self.assertLessEqual(
-      datetime.datetime.fromisoformat(first_result[2]),
-      datetime.datetime.fromisoformat(second_result[2]),
+      datetime.datetime.fromisoformat(first_result[1]),
+      datetime.datetime.fromisoformat(second_result[1]),
     )
     # and
-    self.assertEqual(first_result[3], 0)
-    self.assertEqual(second_result[3], 1)
+    self.assertEqual(first_result[2], 0)
+    self.assertEqual(second_result[2], 1)
 
   def test_upsert_movie_update_on_conflict(self):
     # given

@@ -42,7 +42,6 @@ class FilmwebDB:
           duration INTEGER
         );
         CREATE TABLE IF NOT EXISTS movie_rating(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           date_created TEXT,
           last_updated TEXT,
           movie_id INTEGER NOT NULL,
@@ -67,7 +66,6 @@ class FilmwebDB:
           name TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS movie_genres(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           movie_id INTEGER NOT NULL,
           genre_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -79,7 +77,6 @@ class FilmwebDB:
           name TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS movie_directors(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           movie_id INTEGER NOT NULL,
           director_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -94,7 +91,6 @@ class FilmwebDB:
           display_name TEXT
         );
         CREATE TABLE IF NOT EXISTS user_similarity(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
           similar_id INTEGER NOT NULL,
           similarity REAL NOT NULL,
@@ -103,7 +99,6 @@ class FilmwebDB:
           FOREIGN KEY (similar_id) REFERENCES user (id) ON DELETE CASCADE ON UPDATE CASCADE
         );
         CREATE TABLE IF NOT EXISTS rating(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
           movie_id INTEGER NOT NULL,
           rate INTEGER NOT NULL,
@@ -118,7 +113,6 @@ class FilmwebDB:
           name TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS movie_cast(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           movie_id INTEGER NOT NULL,
           cast_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -130,7 +124,6 @@ class FilmwebDB:
           code TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS movie_countries(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
           movie_id INTEGER NOT NULL,
           country_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -138,29 +131,47 @@ class FilmwebDB:
           UNIQUE (movie_id, country_id)
         );
 
-        COMMIT;
-      """)
-
-      trigger_template = """
-        BEGIN;
-
-        CREATE TRIGGER IF NOT EXISTS {table}_inserted AFTER INSERT ON {table}
+        CREATE TRIGGER IF NOT EXISTS user_inserted AFTER INSERT ON user
         FOR EACH ROW
         WHEN NEW.last_updated IS NULL
         BEGIN
-          UPDATE {table} SET date_created = datetime(), last_updated = datetime() WHERE id = NEW.id;
+          UPDATE user SET date_created = datetime(), last_updated = datetime() WHERE id = NEW.id;
         END;
-        CREATE TRIGGER IF NOT EXISTS {table}_updated AFTER UPDATE ON {table}
+        CREATE TRIGGER IF NOT EXISTS user_updated AFTER UPDATE ON user
         FOR EACH ROW
         WHEN OLD.last_updated = NEW.last_updated
         BEGIN
-          UPDATE {table} SET last_updated = datetime() WHERE id = NEW.id;
+          UPDATE user SET last_updated = datetime() WHERE id = NEW.id;
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS movie_inserted AFTER INSERT ON movie
+        FOR EACH ROW
+        WHEN NEW.last_updated IS NULL
+        BEGIN
+          UPDATE movie SET date_created = datetime(), last_updated = datetime() WHERE id = NEW.id;
+        END;
+        CREATE TRIGGER IF NOT EXISTS movie_updated AFTER UPDATE ON movie
+        FOR EACH ROW
+        WHEN OLD.last_updated = NEW.last_updated
+        BEGIN
+          UPDATE movie SET last_updated = datetime() WHERE id = NEW.id;
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS movie_rating_inserted AFTER INSERT ON movie_rating
+        FOR EACH ROW
+        WHEN NEW.last_updated IS NULL
+        BEGIN
+          UPDATE movie_rating SET date_created = datetime(), last_updated = datetime() WHERE movie_id = NEW.movie_id;
+        END;
+        CREATE TRIGGER IF NOT EXISTS movie_rating_updated AFTER UPDATE ON movie_rating
+        FOR EACH ROW
+        WHEN OLD.last_updated = NEW.last_updated
+        BEGIN
+          UPDATE movie_rating SET last_updated = datetime() WHERE movie_id = NEW.movie_id;
         END;
 
         COMMIT;
-      """
-      for table in ["user", "movie", "movie_rating"]:
-        cur.executescript(trigger_template.format(table=table))
+      """)
 
       self.con.commit()
 
