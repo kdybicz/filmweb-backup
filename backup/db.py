@@ -164,6 +164,7 @@ class FilmwebDB:
 
 
   def should_update_movie(self, movie_id: int) -> bool:
+    """ Returns True if a movie doesn't exists or is older than 7 days """
     cur = self.con.cursor()
     try:
       cur.execute("""
@@ -173,7 +174,7 @@ class FilmwebDB:
               SELECT 1 FROM movie WHERE id = :id
             ) THEN 1
             WHEN EXISTS (
-              SELECT 1 FROM movie WHERE id = :id AND (last_updated IS NULL OR unixepoch() - unixepoch(last_updated) > 86400)
+              SELECT 1 FROM movie WHERE id = :id AND (last_updated IS NULL OR unixepoch() - unixepoch(last_updated) > 604800)
             ) THEN 1
             ELSE 0
           END
@@ -184,6 +185,7 @@ class FilmwebDB:
 
 
   def should_update_movie_rating(self, movie_id: int) -> bool:
+    """ Returns True if rating for a movie doesn't exists or is older than 2 hours """
     cur = self.con.cursor()
     try:
       cur.execute("""
@@ -204,6 +206,10 @@ class FilmwebDB:
 
 
   def should_update_user(self, user_id: int, ttl: int = 86400) -> bool:
+    """
+    Returns True if user doesn't exists or is older than 1 day by default.
+    Using 1 min for main user and default 1 day for friends.
+    """
     cur = self.con.cursor()
     try:
       cur.execute("""
