@@ -194,6 +194,7 @@ class FilmwebAPI:
       if authenticate is True:
         cookies["JWT"] = self.__token__
 
+      response = None
       try:
         response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
         response.raise_for_status()
