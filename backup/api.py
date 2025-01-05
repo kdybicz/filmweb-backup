@@ -1,4 +1,5 @@
 import logging
+import random
 import requests
 import time
 
@@ -180,7 +181,7 @@ class FilmwebAPI:
 
     url = f"https://www.filmweb.pl/api/v1{path}"
 
-    time.sleep(0.1) # TODO: remove, rethink
+    time.sleep(random.uniform(0.1, 0.35)) # TODO: remove, rethink
 
     retry = 0
     while retry < 3:
