@@ -33,6 +33,7 @@ class FilmwebDB:
 
         CREATE TABLE IF NOT EXISTS movie(
           id INTEGER PRIMARY KEY,
+          date_created TEXT,
           last_updated TEXT,
           orig_title TEXT NOT NULL,
           int_title TEXT,
@@ -42,6 +43,8 @@ class FilmwebDB:
         );
         CREATE TABLE IF NOT EXISTS movie_rating(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          date_created TEXT,
+          last_updated TEXT,
           movie_id INTEGER NOT NULL,
           count INTEGER NOT NULL,
           rate REAL NOT NULL,
@@ -82,6 +85,7 @@ class FilmwebDB:
         );
         CREATE TABLE IF NOT EXISTS user(
           id INTEGER PRIMARY KEY,
+          date_created TEXT,
           last_updated TEXT,
           name TEXT NOT NULL,
           display_name TEXT
@@ -128,33 +132,29 @@ class FilmwebDB:
           FOREIGN KEY (country_id) REFERENCES country (id) ON DELETE CASCADE ON UPDATE CASCADE
         );
 
-        CREATE TRIGGER IF NOT EXISTS movie_inserted AFTER INSERT ON movie
+        COMMIT;
+      """)
+
+      trigger_template = """
+        BEGIN;
+
+        CREATE TRIGGER IF NOT EXISTS {table}_inserted AFTER INSERT ON {table}
         FOR EACH ROW
         WHEN NEW.last_updated IS NULL
         BEGIN
-          UPDATE movie SET last_updated = datetime() WHERE id = NEW.id;
+          UPDATE {table} SET date_created = datetime(), last_updated = datetime() WHERE id = NEW.id;
         END;
-        CREATE TRIGGER IF NOT EXISTS movie_updated AFTER UPDATE ON movie
+        CREATE TRIGGER IF NOT EXISTS {table}_updated AFTER UPDATE ON {table}
         FOR EACH ROW
         WHEN OLD.last_updated = NEW.last_updated
         BEGIN
-          UPDATE movie SET last_updated = datetime() WHERE id = NEW.id;
-        END;
-        CREATE TRIGGER IF NOT EXISTS user_inserted AFTER INSERT ON user
-        FOR EACH ROW
-        WHEN NEW.last_updated IS NULL
-        BEGIN
-          UPDATE user SET last_updated = datetime() WHERE id = NEW.id;
-        END;
-        CREATE TRIGGER IF NOT EXISTS user_updated AFTER UPDATE ON user
-        FOR EACH ROW
-        WHEN OLD.last_updated = NEW.last_updated
-        BEGIN
-          UPDATE user SET last_updated = datetime() WHERE id = NEW.id;
+          UPDATE {table} SET last_updated = datetime() WHERE id = NEW.id;
         END;
 
         COMMIT;
-      """)
+      """
+      for table in ["user", "movie", "movie_rating"]:
+        cur.executescript(trigger_template.format(table=table))
 
       self.con.commit()
 
@@ -174,6 +174,26 @@ class FilmwebDB:
             ) THEN 1
             WHEN EXISTS (
               SELECT 1 FROM movie WHERE id = :id AND (last_updated IS NULL OR unixepoch() - unixepoch(last_updated) > 86400)
+            ) THEN 1
+            ELSE 0
+          END
+      """, ({ "id": movie_id }))
+      return cur.fetchone()[0] == 1
+    finally:
+      cur.close()
+
+
+  def should_update_movie_rating(self, movie_id: int) -> bool:
+    cur = self.con.cursor()
+    try:
+      cur.execute("""
+        SELECT 
+          CASE 
+            WHEN NOT EXISTS (
+              SELECT 1 FROM movie_rating WHERE movie_id = :id
+            ) THEN 1
+            WHEN EXISTS (
+              SELECT 1 FROM movie_rating WHERE movie_id = :id AND (last_updated IS NULL OR unixepoch() - unixepoch(last_updated) > 7200)
             ) THEN 1
             ELSE 0
           END
