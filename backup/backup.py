@@ -22,6 +22,11 @@ class FilmwebBackup:
     return cls(db, api)
 
 
+  @classmethod
+  def from_db_api(cls, db: FilmwebDB, api: FilmwebAPI):
+    return cls(db, api)
+
+
   def backup_movie(self, movie_id: int) -> None:
     if self.db.should_update_movie(movie_id) is True:
       movie_details = self.api.fetch_movie_details(movie_id)
