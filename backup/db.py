@@ -59,7 +59,8 @@ class FilmwebDB:
           countVote8 INTEGER NOT NULL,
           countVote9 INTEGER NOT NULL,
           countVote10 INTEGER NOT NULL,
-          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          UNIQUE (movie_id)
         );
         CREATE TABLE IF NOT EXISTS genre(
           id INTEGER PRIMARY KEY,
@@ -70,7 +71,8 @@ class FilmwebDB:
           movie_id INTEGER NOT NULL,
           genre_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          FOREIGN KEY (genre_id) REFERENCES genre (id) ON DELETE CASCADE ON UPDATE CASCADE
+          FOREIGN KEY (genre_id) REFERENCES genre (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          UNIQUE (movie_id, genre_id)
         );
         CREATE TABLE IF NOT EXISTS director(
           id INTEGER PRIMARY KEY,
@@ -81,7 +83,8 @@ class FilmwebDB:
           movie_id INTEGER NOT NULL,
           director_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          FOREIGN KEY (director_id) REFERENCES director (id) ON DELETE CASCADE ON UPDATE CASCADE
+          FOREIGN KEY (director_id) REFERENCES director (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          UNIQUE (movie_id, director_id)
         );
         CREATE TABLE IF NOT EXISTS user(
           id INTEGER PRIMARY KEY,
@@ -107,7 +110,8 @@ class FilmwebDB:
           favorite INTEGER NOT NULL,
           view_date INTEGER NOT NULL,
           FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE
+          FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          UNIQUE (movie_id, user_id)
         );
         CREATE TABLE IF NOT EXISTS cast(
           id INTEGER PRIMARY KEY,
@@ -118,7 +122,8 @@ class FilmwebDB:
           movie_id INTEGER NOT NULL,
           cast_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          FOREIGN KEY (cast_id) REFERENCES cast (id) ON DELETE CASCADE ON UPDATE CASCADE
+          FOREIGN KEY (cast_id) REFERENCES cast (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          UNIQUE (movie_id, cast_id)
         );
         CREATE TABLE IF NOT EXISTS country(
           id INTEGER PRIMARY KEY,
@@ -129,7 +134,8 @@ class FilmwebDB:
           movie_id INTEGER NOT NULL,
           country_id INTEGER NOT NULL,
           FOREIGN KEY (movie_id) REFERENCES movie (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          FOREIGN KEY (country_id) REFERENCES country (id) ON DELETE CASCADE ON UPDATE CASCADE
+          FOREIGN KEY (country_id) REFERENCES country (id) ON DELETE CASCADE ON UPDATE CASCADE,
+          UNIQUE (movie_id, country_id)
         );
 
         COMMIT;
