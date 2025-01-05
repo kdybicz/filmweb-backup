@@ -238,7 +238,11 @@ class FilmwebDB:
   def upsert_movie(self, movie: Movie):
     cur = self.con.cursor()
     try:
-      cur.execute("REPLACE INTO movie (id, orig_title, int_title, title, duration, year) VALUES (:id, :orig_title, :int_title, :title, :duration, :year);", {
+      cur.execute("""
+        INSERT INTO movie (id, orig_title, int_title, title, duration, year) VALUES (:id, :orig_title, :int_title, :title, :duration, :year)
+          ON CONFLICT (id)
+            DO UPDATE SET orig_title = excluded.orig_title, int_title = excluded.int_title, title = excluded.title, duration = excluded.duration, year = excluded.year;
+      """, {
         "id": movie.id,
         "orig_title": movie.originalTitle,
         "int_title": movie.internationalTitle,
@@ -281,7 +285,11 @@ class FilmwebDB:
   def upsert_movie_rating(self, rating: MovieRating):
     cur = self.con.cursor()
     try:
-      cur.execute("REPLACE INTO movie_rating (movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (:movie_id, :count, :rate, :countWantToSee, :countVote1, :countVote2, :countVote3, :countVote4, :countVote5, :countVote6, :countVote7, :countVote8, :countVote9, :countVote10);", asdict(rating))
+      cur.execute("""
+        INSERT INTO movie_rating (movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (:movie_id, :count, :rate, :countWantToSee, :countVote1, :countVote2, :countVote3, :countVote4, :countVote5, :countVote6, :countVote7, :countVote8, :countVote9, :countVote10)
+          ON CONFLICT (movie_id)
+            DO UPDATE SET count = excluded.count, rate = excluded.rate, countWantToSee = excluded.countWantToSee, countVote1 = excluded.countVote1, countVote2 = excluded.countVote2, countVote3 = excluded.countVote3, countVote4 = excluded.countVote4, countVote5 = excluded.countVote5, countVote6 = excluded.countVote6, countVote7 = excluded.countVote7, countVote8 = excluded.countVote8, countVote9 = excluded.countVote9, countVote10 = excluded.countVote10;
+      """, asdict(rating))
 
       self.con.commit()
 
@@ -309,7 +317,10 @@ class FilmwebDB:
   def upsert_user_details(self, user_details: UserDetails):
     cur = self.con.cursor()
     try:
-      cur.execute("REPLACE INTO user (id, name, display_name) VALUES (:id, :name, :display_name);", asdict(user_details))
+      cur.execute("""
+        INSERT INTO user (id, name, display_name) VALUES (:id, :name, :display_name)
+          ON CONFLICT (id) DO UPDATE SET name = excluded.name, display_name = excluded.display_name;
+      """, asdict(user_details))
 
       self.con.commit()
 
