@@ -41,12 +41,13 @@ class TestFilmwebAPI(unittest.TestCase):
     mock_response = MagicMock()
     mock_response.status_code = 401
     mock_response.text = "Unauthorized"
-    mock_response.raise_for_status.side_effect = requests.HTTPError(f"401 Client Error: Unauthorized for url: https://example.com")
+    mock_response.raise_for_status.side_effect = requests.HTTPError("401 Client Error: Unauthorized for url: https://example.com")
     mock_requests.return_value = mock_response
     # expect
     with self.assertRaises(FilmwebError) as e:
       self.api.fetch("/test", True)
-    self.assertEqual(e.exception.args[0], "Failed to fetch data - 401: Unauthorized")
+    self.assertEqual(e.exception.args[0], "Failed to fetch data due to unhandled exception")
+    self.assertEqual(e.exception.__cause__.args[0], "401 Client Error: Unauthorized for url: https://example.com")
     # and
     mock_requests.assert_called_once()
 
