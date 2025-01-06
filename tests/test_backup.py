@@ -90,8 +90,8 @@ class TestFilmwebBackup(unittest.TestCase):
       call(mock_friend_details.id)
     ])
     mock_db.upsert_user_details.assert_has_calls([
-      call(mock_user_details),
-      call(mock_friend_details)
+      call(mock_friend_details),
+      call(mock_user_details)
     ])
     mock_db.upsert_ratings.assert_has_calls([
       call(mock_user_details.id, [mock_user_rating]),

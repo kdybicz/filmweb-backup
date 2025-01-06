@@ -46,8 +46,6 @@ class FilmwebBackup:
       self.logger.debug(f"User {user.name} details are up-to-date")
       return None
 
-    self.db.upsert_user_details(user)
-
     ratings = self.api.fetch_user_ratings()
     self.db.upsert_ratings(user.id, ratings)
 
@@ -61,16 +59,18 @@ class FilmwebBackup:
           self.logger.debug(f"Friend {friend.name} details are up-to-date")
           continue
 
-        self.db.upsert_user_details(friend)
-
         friend_ratings = self.api.fetch_friend_ratings(friend.name)
         self.db.upsert_ratings(friend.id, friend_ratings)
 
         for rating in friend_ratings:
           self.backup_movie(rating.movie_id)
+
+        self.db.upsert_user_details(friend)
       
       similar_users = self.api.fetch_user_friends_similarities()
       self.db.upsert_similar_users(user.id, similar_users)
+
+    self.db.upsert_user_details(user)
 
 
   def backup(self) -> UserDetails:
