@@ -205,19 +205,13 @@ class FilmwebAPI:
         return response.json()
       except requests.exceptions.Timeout as e:
         if retry == 3:
-          self.logger.error(f"All {retry} attempts to fetch {url} have failed!", e)
+          self.logger.error(f"All {retry} attempts to fetch {url} have failed!", e, exc_info=True)
         continue
       except requests.exceptions.RequestException as e:
         if response is not None and response.status_code == 400:
           self.__token__ = self.fetch_token()
           continue
         else:
-          msg = "Reason unknown"
-          if response is not None:
-            msg = f"{response.status_code}: {response.text.strip()}"
-          elif e.strerror is not None:
-            msg = e.strerror
-          raise FilmwebError(f"Failed to fetch data - {msg}")
           raise FilmwebError(f"Failed to fetch data due to unhandled exception") from e
 
     raise FilmwebError(f"Failed to fetch data after {retry} retries!")
