@@ -212,7 +212,7 @@ class FilmwebAPI:
         else:
           msg = "Reason unknown"
           if response is not None:
-            msg = "{response.status_code}: {response.text.strip()}"
+            msg = f"{response.status_code}: {response.text.strip()}"
           elif e.strerror is not None:
             msg = e.strerror
           raise FilmwebError(f"Failed to fetch data - {msg}")
