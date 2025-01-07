@@ -55,7 +55,7 @@ class FilmwebBackup:
     friends = self.api.fetch_user_friends()
     if len(friends) > 0:
       for friend in friends:
-        if self.db.should_update_user(friend.id) is False:
+        if self.db.should_update_user(friend.id, 60) is False: # TODO: change or remove TTL
           self.logger.debug(f"Friend {friend.name} details are up-to-date")
           continue
 
