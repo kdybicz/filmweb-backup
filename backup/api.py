@@ -27,7 +27,7 @@ class FilmwebAPI:
     def fetch_movie_details(self, movie_id: int) -> Movie:
         movie_details = self.fetch(f"/film/{movie_id}/preview")
 
-        self.logger.debug(f"Got movie details for movie id {movie_id}")
+        self.logger.debug("Got movie details for movie id %s", movie_id)
 
         return Movie(
             id=movie_id,
@@ -76,7 +76,7 @@ class FilmwebAPI:
     def fetch_movie_rating(self, movie_id: int) -> MovieRating:
         movie_rating = self.fetch(f"/film/{movie_id}/rating")
 
-        self.logger.debug(f"Got rating details for movie id {movie_id}")
+        self.logger.debug("Got rating details for movie id %s", movie_id)
 
         return MovieRating(
             movie_id=movie_id,
@@ -139,7 +139,7 @@ class FilmwebAPI:
 
                 movies.append(movie)
 
-        self.logger.info(f"Found {len(movies)} scored movies!")
+        self.logger.info("Found %s scored movies!", len(movies))
 
         return movies
 
@@ -156,7 +156,7 @@ class FilmwebAPI:
             ),
         )
 
-        self.logger.debug(f"Got user details for user {user_details.name}")
+        self.logger.debug("Got user details for user %s", user_details.name)
 
         return user_details
 
@@ -176,7 +176,7 @@ class FilmwebAPI:
             )
             friends_details.append(friend_details)
 
-        self.logger.info(f"Found {len(friends_details)} friends!")
+        self.logger.info("Found %s friends!", len(friends_details))
 
         return friends_details
 
@@ -232,7 +232,7 @@ class FilmwebAPI:
             response = requests.post(url, cookies=cookies, timeout=10)
             response.raise_for_status()
 
-            self.logger.debug(f"Got the JWT token!")
+            self.logger.debug("Got the JWT token!")
 
             return response.cookies.get("JWT")
         except requests.exceptions.RequestException:
