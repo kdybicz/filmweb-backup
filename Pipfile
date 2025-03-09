@@ -11,10 +11,12 @@ requests = "*"
 urllib3 = "==2.3.0"
 
 [dev-packages]
+black = "*"
 covdefaults = ">=2.1.0"
 coverage = "*"
-flake8 = "*"
+isort = "*"
 pre-commit = "*"
+pylint = "*"
 pytest = "*"
 
 [requires]

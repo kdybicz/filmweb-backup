@@ -1,0 +1,14 @@
+Usage: make TARGET
+
+setup:
+	setup             runs all tasks to setup local dependencies
+
+utils:
+	clean             cleans all local resources safely
+	format            runs formatting commands against codebase
+	security_patch    runs commands to perform basic security patching
+
+tests:
+	test              runs lint and unit tests
+	test/lint         runs linting commands
+	test/unit         runs unit tests locally

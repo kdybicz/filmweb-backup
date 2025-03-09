@@ -1,34 +1,37 @@
-from dataclasses import asdict, dataclass
 import logging
 import sqlite3
+from dataclasses import asdict, dataclass
 
-from .data import Genre, Movie, MovieRating, UserRating, UserDetails, UserSimilarity
+from .data import Genre, Movie, MovieRating, UserDetails, UserRating, UserSimilarity
+
 
 @dataclass
 class MovieRatingDetails:
-  original_title: str
-  international_title: str | None
-  title: str | None
-  year: int
-  rate: float
-  my_rate: int
-  favorite: bool
-  view_date: int
-  duration: int | None
-  genres: str
-  directors: str
-  cast: str
-  countries: str
+    original_title: str
+    international_title: str | None
+    title: str | None
+    year: int
+    rate: float
+    my_rate: int
+    favorite: bool
+    view_date: int
+    duration: int | None
+    genres: str
+    directors: str
+    cast: str
+    countries: str
+
 
 class FilmwebDB:
-  def __init__(self, name: str = "filmweb.db"):
-    self.logger = logging.getLogger("filmweb.db")
+    def __init__(self, name: str = "filmweb.db"):
+        self.logger = logging.getLogger("filmweb.db")
 
-    self.con = sqlite3.connect(name)
+        self.con = sqlite3.connect(name)
 
-    cur = self.con.cursor()
-    try:
-      cur.executescript("""
+        cur = self.con.cursor()
+        try:
+            cur.executescript(
+                """
         BEGIN;
 
         CREATE TABLE IF NOT EXISTS movie(
@@ -171,20 +174,21 @@ class FilmwebDB:
         END;
 
         COMMIT;
-      """)
+      """
+            )
 
-      self.con.commit()
+            self.con.commit()
 
-      self.logger.debug("Database initialized!")
-    finally:
-      cur.close()
+            self.logger.debug("Database initialized!")
+        finally:
+            cur.close()
 
-
-  def should_update_movie(self, movie_id: int, ttl: int = 604800) -> bool:
-    """ Returns True if a movie doesn't exists or is older than 7 days """
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def should_update_movie(self, movie_id: int, ttl: int = 604800) -> bool:
+        """Returns True if a movie doesn't exists or is older than 7 days"""
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         SELECT 
           CASE 
             WHEN NOT EXISTS (
@@ -195,17 +199,19 @@ class FilmwebDB:
             ) THEN 1
             ELSE 0
           END
-      """, ({ "id": movie_id, "ttl": ttl }))
-      return cur.fetchone()[0] == 1
-    finally:
-      cur.close()
+      """,
+                ({"id": movie_id, "ttl": ttl}),
+            )
+            return cur.fetchone()[0] == 1
+        finally:
+            cur.close()
 
-
-  def should_update_movie_rating(self, movie_id: int, ttl: int = 86400) -> bool:
-    """ Returns True if rating for a movie doesn't exists or is older than 24 hours """
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def should_update_movie_rating(self, movie_id: int, ttl: int = 86400) -> bool:
+        """Returns True if rating for a movie doesn't exists or is older than 24 hours"""
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         SELECT 
           CASE 
             WHEN NOT EXISTS (
@@ -216,19 +222,21 @@ class FilmwebDB:
             ) THEN 1
             ELSE 0
           END
-      """, ({ "id": movie_id, "ttl": ttl }))
-      return cur.fetchone()[0] == 1
-    finally:
-      cur.close()
+      """,
+                ({"id": movie_id, "ttl": ttl}),
+            )
+            return cur.fetchone()[0] == 1
+        finally:
+            cur.close()
 
-
-  def should_update_user(self, user_id: int, ttl: int = 3600) -> bool:
-    """
-    Returns True if user doesn't exists or is older than 1 hour by default.
-    """
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def should_update_user(self, user_id: int, ttl: int = 3600) -> bool:
+        """
+        Returns True if user doesn't exists or is older than 1 hour by default.
+        """
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         SELECT 
           CASE 
             WHEN NOT EXISTS (
@@ -239,161 +247,232 @@ class FilmwebDB:
             ) THEN 1
             ELSE 0
           END
-      """, ({ "id": user_id, "ttl": ttl }))
-      return cur.fetchone()[0] == 1
-    finally:
-      cur.close()
+      """,
+                ({"id": user_id, "ttl": ttl}),
+            )
+            return cur.fetchone()[0] == 1
+        finally:
+            cur.close()
 
-
-  def upsert_movie(self, movie: Movie):
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def upsert_movie(self, movie: Movie):
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         INSERT INTO movie (id, orig_title, int_title, title, duration, year) VALUES (:id, :orig_title, :int_title, :title, :duration, :year)
           ON CONFLICT (id)
             DO UPDATE SET orig_title = excluded.orig_title, int_title = excluded.int_title, title = excluded.title, duration = excluded.duration, year = excluded.year;
-      """, {
-        "id": movie.id,
-        "orig_title": movie.originalTitle,
-        "int_title": movie.internationalTitle,
-        "title": movie.title,
-        "duration": movie.duration,
-        "year": movie.year,
-      })
+      """,
+                {
+                    "id": movie.id,
+                    "orig_title": movie.originalTitle,
+                    "int_title": movie.internationalTitle,
+                    "title": movie.title,
+                    "duration": movie.duration,
+                    "year": movie.year,
+                },
+            )
 
-      genres = list(asdict(genre) for genre in movie.genres)
-      cur.executemany("INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", genres)
+            genres = list(asdict(genre) for genre in movie.genres)
+            cur.executemany(
+                "INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;",
+                genres,
+            )
 
-      movie_genres = list({ "movie_id": movie.id, "genre_id": genre.id } for genre in movie.genres)
-      cur.execute("DELETE FROM movie_genres WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id) ON CONFLICT DO NOTHING;", movie_genres)
+            movie_genres = list(
+                {"movie_id": movie.id, "genre_id": genre.id} for genre in movie.genres
+            )
+            cur.execute(
+                "DELETE FROM movie_genres WHERE movie_id = :movie_id;",
+                {"movie_id": movie.id},
+            )
+            cur.executemany(
+                "INSERT INTO movie_genres (movie_id, genre_id) VALUES (:movie_id, :genre_id) ON CONFLICT DO NOTHING;",
+                movie_genres,
+            )
 
-      directors = list(asdict(director) for director in movie.directors)
-      cur.executemany("INSERT INTO director (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", directors)
+            directors = list(asdict(director) for director in movie.directors)
+            cur.executemany(
+                "INSERT INTO director (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;",
+                directors,
+            )
 
-      movie_directors = list({ "movie_id": movie.id, "director_id": director.id } for director in movie.directors)
-      cur.execute("DELETE FROM movie_directors WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id) ON CONFLICT DO NOTHING;", movie_directors)
+            movie_directors = list(
+                {"movie_id": movie.id, "director_id": director.id}
+                for director in movie.directors
+            )
+            cur.execute(
+                "DELETE FROM movie_directors WHERE movie_id = :movie_id;",
+                {"movie_id": movie.id},
+            )
+            cur.executemany(
+                "INSERT INTO movie_directors (movie_id, director_id) VALUES (:movie_id, :director_id) ON CONFLICT DO NOTHING;",
+                movie_directors,
+            )
 
-      cast = list(asdict(cast) for cast in movie.cast)
-      cur.executemany("INSERT INTO cast (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", cast)
+            cast = list(asdict(cast) for cast in movie.cast)
+            cur.executemany(
+                "INSERT INTO cast (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;",
+                cast,
+            )
 
-      movie_cast = list({ "movie_id": movie.id, "cast_id": cast.id } for cast in movie.cast)
-      cur.execute("DELETE FROM movie_cast WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id) ON CONFLICT DO NOTHING;", movie_cast)
+            movie_cast = list(
+                {"movie_id": movie.id, "cast_id": cast.id} for cast in movie.cast
+            )
+            cur.execute(
+                "DELETE FROM movie_cast WHERE movie_id = :movie_id;",
+                {"movie_id": movie.id},
+            )
+            cur.executemany(
+                "INSERT INTO movie_cast (movie_id, cast_id) VALUES (:movie_id, :cast_id) ON CONFLICT DO NOTHING;",
+                movie_cast,
+            )
 
-      countries = list(asdict(country) for country in movie.countries)
-      cur.executemany("INSERT INTO country (id, code) VALUES (:id, :code) ON CONFLICT DO NOTHING;", countries)
+            countries = list(asdict(country) for country in movie.countries)
+            cur.executemany(
+                "INSERT INTO country (id, code) VALUES (:id, :code) ON CONFLICT DO NOTHING;",
+                countries,
+            )
 
-      movie_countries = list({ "movie_id": movie.id, "country_id": country.id } for country in movie.countries)
-      cur.execute("DELETE FROM movie_countries WHERE movie_id = :movie_id;", { "movie_id": movie.id })
-      cur.executemany("INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id) ON CONFLICT DO NOTHING;", movie_countries)
+            movie_countries = list(
+                {"movie_id": movie.id, "country_id": country.id}
+                for country in movie.countries
+            )
+            cur.execute(
+                "DELETE FROM movie_countries WHERE movie_id = :movie_id;",
+                {"movie_id": movie.id},
+            )
+            cur.executemany(
+                "INSERT INTO movie_countries (movie_id, country_id) VALUES (:movie_id, :country_id) ON CONFLICT DO NOTHING;",
+                movie_countries,
+            )
 
-      self.con.commit()
+            self.con.commit()
 
-      self.logger.debug(f"Stored movie details for movie id {movie.id}")
-    finally:
-      cur.close()
+            self.logger.debug(f"Stored movie details for movie id {movie.id}")
+        finally:
+            cur.close()
 
-
-  def upsert_movie_rating(self, rating: MovieRating):
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def upsert_movie_rating(self, rating: MovieRating):
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         INSERT INTO movie_rating (movie_id, count, rate, countWantToSee, countVote1, countVote2, countVote3, countVote4, countVote5, countVote6, countVote7, countVote8, countVote9, countVote10) VALUES (:movie_id, :count, :rate, :countWantToSee, :countVote1, :countVote2, :countVote3, :countVote4, :countVote5, :countVote6, :countVote7, :countVote8, :countVote9, :countVote10)
           ON CONFLICT (movie_id)
             DO UPDATE SET count = excluded.count, rate = excluded.rate, countWantToSee = excluded.countWantToSee, countVote1 = excluded.countVote1, countVote2 = excluded.countVote2, countVote3 = excluded.countVote3, countVote4 = excluded.countVote4, countVote5 = excluded.countVote5, countVote6 = excluded.countVote6, countVote7 = excluded.countVote7, countVote8 = excluded.countVote8, countVote9 = excluded.countVote9, countVote10 = excluded.countVote10;
-      """, asdict(rating))
+      """,
+                asdict(rating),
+            )
 
-      self.con.commit()
+            self.con.commit()
 
-      self.logger.debug(f"Stored movie rating for movie id {rating.movie_id}")
-    finally:
-      cur.close()
+            self.logger.debug(f"Stored movie rating for movie id {rating.movie_id}")
+        finally:
+            cur.close()
 
+    def upsert_genres(self, genres: list[Genre]):
+        if len(genres) == 0:
+            return
 
-  def upsert_genres(self, genres: list[Genre]):
-    if (len(genres) == 0):
-      return
+        cur = self.con.cursor()
+        try:
+            rows = list(asdict(genre) for genre in genres)
+            cur.executemany(
+                "INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;",
+                rows,
+            )
 
-    cur = self.con.cursor()
-    try:
-      rows = list(asdict(genre) for genre in genres)
-      cur.executemany("INSERT INTO genre (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING;", rows)
+            self.con.commit()
 
-      self.con.commit()
+            self.logger.debug(f"Stored {len(genres)} movie genres!")
+        finally:
+            cur.close()
 
-      self.logger.debug(f"Stored {len(genres)} movie genres!")
-    finally:
-      cur.close()
-
-
-  def upsert_user_details(self, user_details: UserDetails):
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def upsert_user_details(self, user_details: UserDetails):
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         INSERT INTO user (id, name, display_name) VALUES (:id, :name, :display_name)
           ON CONFLICT (id) DO UPDATE SET name = excluded.name, display_name = excluded.display_name;
-      """, asdict(user_details))
+      """,
+                asdict(user_details),
+            )
 
-      self.con.commit()
+            self.con.commit()
 
-      self.logger.debug(f"Stored user details for user id {user_details.id}")
-    finally:
-      cur.close()
+            self.logger.debug(f"Stored user details for user id {user_details.id}")
+        finally:
+            cur.close()
 
+    def upsert_ratings(self, user_id: int, ratings: list[UserRating]):
+        if len(ratings) == 0:
+            return
 
-  def upsert_ratings(self, user_id: int, ratings: list[UserRating]):
-    if (len(ratings) == 0):
-      return
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                "DELETE FROM rating WHERE user_id = :user_id;", {"user_id": user_id}
+            )
 
-    cur = self.con.cursor()
-    try:
-      cur.execute("DELETE FROM rating WHERE user_id = :user_id;", { "user_id": user_id })
+            rows = list(
+                {
+                    "user_id": user_id,
+                    "movie_id": rating.movie_id,
+                    "rate": rating.rate,
+                    "favorite": 1 if rating.favorite else 0,
+                    "view_date": rating.view_date,
+                }
+                for rating in ratings
+            )
+            cur.executemany(
+                "INSERT INTO rating (user_id, movie_id, rate, favorite, view_date) VALUES (:user_id, :movie_id, :rate, :favorite, :view_date);",
+                rows,
+            )
 
-      rows = list({
-        "user_id": user_id,
-        "movie_id": rating.movie_id,
-        "rate": rating.rate,
-        "favorite": 1 if rating.favorite else 0,
-        "view_date": rating.view_date
-      } for rating in ratings)
-      cur.executemany("INSERT INTO rating (user_id, movie_id, rate, favorite, view_date) VALUES (:user_id, :movie_id, :rate, :favorite, :view_date);", rows)
+            self.con.commit()
 
-      self.con.commit()
+            self.logger.debug(f"Stored user ratings for user id {user_id}")
+        finally:
+            cur.close()
 
-      self.logger.debug(f"Stored user ratings for user id {user_id}")
-    finally:
-      cur.close()
+    def upsert_similar_users(self, user_id: int, similar_users: list[UserSimilarity]):
+        if len(similar_users) == 0:
+            return
 
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                "DELETE FROM user_similarity WHERE user_id = :user_id;",
+                {"user_id": user_id},
+            )
 
-  def upsert_similar_users(self, user_id: int, similar_users: list[UserSimilarity]):
-    if (len(similar_users) == 0):
-      return
+            rows = list(
+                {
+                    "user_id": user_id,
+                    "similar_id": similar.id,
+                    "similarity": similar.similarity,
+                    "movies": similar.movies,
+                }
+                for similar in similar_users
+            )
+            cur.executemany(
+                "INSERT INTO user_similarity (user_id, similar_id, similarity, movies) VALUES (:user_id, :similar_id, :similarity, :movies);",
+                rows,
+            )
 
-    cur = self.con.cursor()
-    try:
-      cur.execute("DELETE FROM user_similarity WHERE user_id = :user_id;", { "user_id": user_id })
+            self.con.commit()
 
-      rows = list({
-        "user_id": user_id,
-        "similar_id": similar.id,
-        "similarity": similar.similarity,
-        "movies": similar.movies,
-      } for similar in similar_users)
-      cur.executemany("INSERT INTO user_similarity (user_id, similar_id, similarity, movies) VALUES (:user_id, :similar_id, :similarity, :movies);", rows)
+            self.logger.debug(f"Stored similar users for user id {user_id}")
+        finally:
+            cur.close()
 
-      self.con.commit()
-
-      self.logger.debug(f"Stored similar users for user id {user_id}")
-    finally:
-      cur.close()
-
-
-  def get_user_rating(self, user_id: int) -> list[MovieRatingDetails]:
-    cur = self.con.cursor()
-    try:
-      cur.execute("""
+    def get_user_rating(self, user_id: int) -> list[MovieRatingDetails]:
+        cur = self.con.cursor()
+        try:
+            cur.execute(
+                """
         SELECT m.orig_title,
           m.int_title,
           m.title,
@@ -420,34 +499,41 @@ class FilmwebDB:
           INNER JOIN `country` ct ON mct.country_id = ct.id
         WHERE r.user_id = :id
         GROUP BY m.id;
-      """, ({ "id": user_id }))
-      return list(MovieRatingDetails(
-        original_title=rating[0],
-        international_title=rating[1],
-        title=rating[2],
-        year=rating[3],
-        rate=rating[4],
-        my_rate=rating[5],
-        favorite=True if rating[6] == 1 else False,
-        view_date=rating[7],
-        duration=rating[8],
-        genres=rating[9],
-        directors=rating[10],
-        cast=rating[11],
-        countries=rating[12],
-      ) for rating in cur.fetchall())
-    finally:
-      cur.close()
+      """,
+                ({"id": user_id}),
+            )
+            return list(
+                MovieRatingDetails(
+                    original_title=rating[0],
+                    international_title=rating[1],
+                    title=rating[2],
+                    year=rating[3],
+                    rate=rating[4],
+                    my_rate=rating[5],
+                    favorite=True if rating[6] == 1 else False,
+                    view_date=rating[7],
+                    duration=rating[8],
+                    genres=rating[9],
+                    directors=rating[10],
+                    cast=rating[11],
+                    countries=rating[12],
+                )
+                for rating in cur.fetchall()
+            )
+        finally:
+            cur.close()
 
-
-  def get_all_users(self) -> list[UserDetails]:
-    cur = self.con.cursor()
-    try:
-      cur.execute("SELECT id, name, display_name FROM user;")
-      return list(UserDetails(
-        user[0],
-        user[1],
-        user[2],
-      ) for user in cur.fetchall())
-    finally:
-      cur.close()
+    def get_all_users(self) -> list[UserDetails]:
+        cur = self.con.cursor()
+        try:
+            cur.execute("SELECT id, name, display_name FROM user;")
+            return list(
+                UserDetails(
+                    user[0],
+                    user[1],
+                    user[2],
+                )
+                for user in cur.fetchall()
+            )
+        finally:
+            cur.close()
