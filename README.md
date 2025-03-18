@@ -25,4 +25,4 @@ The JWT tokens used by filmweb.pl is fairly short-lived, so to make the backup t
 
 You can find it using Chrome inspector:
 
-![Chrome inspector](https://github.com/kdybicz/filmweb-backuo/blob/master/docs/img/cookie.png?raw=true)
+![Chrome inspector](https://github.com/kdybicz/filmweb-backup/blob/pipenv/docs/img/cookie.png?raw=true)
