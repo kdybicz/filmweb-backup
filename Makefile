@@ -17,11 +17,11 @@ setup: .venv
 
 format:
 	pipenv run isort --profile=black backup tests cli.py
-	pipenv run black backup tests cli.py
+	pipenv run black backup/ tests/ cli.py
 
 test/lint:
 	pipenv run black --diff --verbose --check backup/ tests/ cli.py
-	# pipenv run pylint --output-format parseable backup/ tests/ cli.py
+	pipenv run pylint --output-format parseable backup/ tests/ cli.py
 	pipenv run isort --profile=black --check-only backup/ tests/ cli.py
 
 test: test/lint test/unit
